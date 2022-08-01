@@ -24,7 +24,7 @@ parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE 
 parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data')
 parser.add_argument('--sample', help = 'Sample name', required = True)
 # TODO double check that the three options here makes sense -- maybe add a crammed option? 
-parser.add_argument('--file_type', help = 'Input file type', choices = ["ubam", "fastq", "bam"], required = True) 
+parser.add_argument('--file_type', help = 'Input file type for -r1 and -r2', choices = ["ubam", "fastq", "bam"], required = True) 
 parser.add_argument('--tmp_dir', help ='Path to directory for temporary files', required = True)
 parser.add_argument('--read_type', help = 'Paired end or Single end reads', choices = ['PE', 'SE'], required = True)
 parser.add_argument('--stranded', help = 'Include for strand specific libraries', default = "NONE", choices = ["NONE", "FIRST_READ_TRANSCRIPTION_STRAND", "SECOND_READ_TRANSCRIPTION_STRAND"])
@@ -42,7 +42,8 @@ parser.add_argument('--out_struct', help = "Directory structure of output", defa
 parser.add_argument( '-d', '--delete', action ='store_true',  help = 'Include to delete the following files: .Aligned.out.bam, Aligned.sortedByCoord.out.bam, Aligned.sortedByCoord.out.bam.bai, ._STARgenome, ._STARpass1, _unmapped.bam and Aligned.sortedByCoord.out.md.bam.bai')
 parser.add_argument('-c', '--cram', action = 'store_true', help = 'Cram the following bams: Aligned.sortedByCoord.out.md.bam')
 parser.add_argument('--ref', help = 'Path to reference genome fasta (for cramming)', required= True) # TODO change this to be required only when cramming
-
+parser.add_argument('--input_to_merge', help = 'Path to secondary input file to concatenate with primary input (ie MSBB which is separated into aligned and unaligend reads)')
+parser.add_argument('--merge_file_type', help = 'Input file type for --input_to_merge', choices = ["ubam", "fastq", "bam"], default = "fastq")
 args = parser.parse_args()
 
 
@@ -51,6 +52,7 @@ if args.read_type == 'PE' and args.file_type == 'fastq' and args.input_read_2 is
 
 if args.out_struct == 'hydra' and args.tissue is None: 
     parser.error("--tissue required if output structure is hydra")
+
 
 
 # Maybe make this an error later 
@@ -230,6 +232,20 @@ def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
         os.remove(mark_dups_bam)
 
 
+#  Note: currently only setup to work with SE reads
+def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, read_type, read_2, tmp_dir):
+    if input_2 is not None:
+        # convert second file to ubam (first file should already be)
+        input_2_ubam = convert_to_ubam(out_dir, sample_name, input_2_file_type, read_type, input_2, read_2, tmp_dir)
+        # concatenate with samtools 
+        unmapped_cat_bam = os.path.join(out_dir, f"{sample_name}_unmapped_cat.bam")
+        concat_ubams(input_1_ubam, input_2_ubam, unmapped_cat_bam)
+        return unmapped_cat_bam
+    else: 
+        return input_1_ubam
+
+
+
 
 # TODO decide if we want to log the size of the input file(s)
 
@@ -241,14 +257,22 @@ out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.ti
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
 salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
 
-# 1. Run fastqc 
-fastqc(out_dirs["fastqc"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2)
+# 1. Run fastqc (if we don't need to merge files first)
+if args.input_to_merge is None: 
+    fastqc(out_dirs["fastqc"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2) 
 
 # 2. convert to Ubam (from fastq or aligned bam)
 ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, args.tmp_dir)
 
+# 2.1 concatenate if needed 
+merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, args.input_to_merge, args.merge_file_type, args.read_type, args.input_read_2, args.tmp_dir)
+
+# 2.1.2 run fastqc on concatenated bams 
+if args.input_to_merge is not None: 
+    fastqc(out_dirs["fastqc"], args.sample, "ubam", args.input_read_type, merged_ubam_out, args.input_read_2)
+
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"])
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"])
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
