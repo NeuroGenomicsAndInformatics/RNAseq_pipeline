@@ -235,10 +235,12 @@ def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
 #  Note: currently only setup to work with SE reads
 def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, read_type, read_2, tmp_dir):
     if input_2 is not None:
+        # fix sample names so they are different 
+        sample_name_input2 = f"{sample_name}_input2"
         # convert second file to ubam (first file should already be)
-        input_2_ubam = convert_to_ubam(out_dir, sample_name, input_2_file_type, read_type, input_2, read_2, tmp_dir)
+        input_2_ubam = convert_to_ubam(out_dir, sample_name_input2, input_2_file_type, read_type, input_2, read_2, tmp_dir)
         # concatenate with samtools 
-        unmapped_cat_bam = os.path.join(out_dir, f"{sample_name}_unmapped_cat.bam")
+        unmapped_cat_bam = os.path.join(out_dir, f"{sample_name}_input1_input2_cat.bam")
         concat_ubams(input_1_ubam, input_2_ubam, unmapped_cat_bam)
         return unmapped_cat_bam
     else: 
