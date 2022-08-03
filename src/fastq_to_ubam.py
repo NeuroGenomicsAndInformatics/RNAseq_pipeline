@@ -87,7 +87,7 @@ def bam_to_ubam(input_bam, output, tmp, \
 
 def concat_ubams(input_bam_1, input_bam_2, output, threads = 12):
     logger.info('Starting samtools concatenate')
-    cmd = (f"samtools cat -b {input_bam_1} {input_bam_2} -o {output} --threads {threads}" )
+    cmd = (f"samtools cat -o {output} --threads {threads} {input_bam_1} {input_bam_2}" )
     cmd_to_call  = cmd.split()
     logger.info(cmd)
     subprocess.check_call(cmd_to_call)
