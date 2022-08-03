@@ -83,9 +83,11 @@ def bam_to_ubam(input_bam, output, tmp, \
     else: 
         logger.error('No input bam file found.')
         sys.exit(f'No input bam file found at {input_bam}')
+
+
 def concat_ubams(input_bam_1, input_bam_2, output, threads = 12):
     logger.info('Starting samtools concatenate')
-    cmd = (f"samtools cat -b {input_bam_1} {input_bam_2} -o {output} -@ {threads}" )
+    cmd = (f"samtools cat -b {input_bam_1} {input_bam_2} -o {output} --threads {threads}" )
     cmd_to_call  = cmd.split()
     logger.info(cmd)
     subprocess.check_call(cmd_to_call)
