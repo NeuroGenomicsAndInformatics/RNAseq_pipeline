@@ -108,27 +108,31 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
           output_dirs = {"circ_bams": out_dir, "DCC_out": out_dir }
      return output_dirs
 
-def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, read_type, star_genome):
+def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, read_type, star_genome, tmp):
      if file_type == 'fastq': 
           if read_type == 'PE':
                star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, star_genome)
           else: 
                star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome)
      elif file_type == "bam":
-          revert_bam(input_1, bam_out_dir) 
           if read_type == 'PE':
                #TODO star_chimeric_bam_PE
+               revert_bam(input_1, bam_out_dir) #TODO not sure if this needs to be different to separate out reads 
                star_chimeric_bam_PE(input_1, bam_out_dir)
           else:
-               #TODO star_chimeric_bam_SE
-               star_chimeric_bam_SE(input_1, bam_out_dir)
+               #TODO test star_chimeric_bam_SE
+               #get ubam
+               ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
+               bam_to_ubam(input_1, ubam_out, tmp )
+               # align with star
+               star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome)
      else: 
           if read_type == 'PE':
                #TODO star_chimeric_bam_PE
                star_chimeric_bam_PE(input_1, bam_out_dir)
           else:
-               #TODO star_chimeric_bam_SE
-               star_chimeric_bam_SE(input_1, bam_out_dir)
+               #TODO test star_chimeric_bam_SE
+               star_chimeric_bam_SE(input_1, bam_out_dir, sample_name, star_genome)
 
 def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, thread_N = 12):
      # run for both mates toghter
@@ -255,15 +259,41 @@ def star_chimeric_bam_PE(input_ubam, out_dir):
      #TODO I need to write this 
      print('Still need to write this')
 
-def star_chimeric_bam_SE(input_ubam, out_dir):
-     #TODO need to write this
-     print('Still need to write this')
+def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
+     read_cmd = 'samtools view -h', thread_N = 12):
+     output_prefix = os.path.join(out_dir, f'{sample_name}.')
+     STAR_file_input = "SAM SE"
+     cmd = (
+          f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
+          f' --genomeDir {genome_dir}'
+          f' --outSAMtype BAM SortedByCoordinate'
+          f' --readFilesIn {input_ubam}'
+          f' --readFilesType {STAR_file_input}'
+          f' --readFilesCommand {read_cmd}'
+          f' --outFileNamePrefix {output_prefix}'
+          f' --outReadsUnmapped Fastx'
+          f' --outSJfilterOverhangMin 15 15 15 15'
+          f' --alignSJoverhangMin 15'
+          f' --alignSJDBoverhangMin 15'
+          f' --outFilterMultimapNmax 20'
+          f' --outFilterScoreMin 1'
+          f' --outFilterMatchNmin 1'
+          f' --outFilterMismatchNmax 2'
+          f' --chimSegmentMin 15'
+          f' --chimScoreMin 15'
+          f' --chimScoreSeparation 10'
+          f' --chimJunctionOverhangMin 15'
+     )
+     print ('Command:' + cmd) 
+     logger.info(cmd)
+     cmd_to_call = cmd.split()
+     subprocess.check_call(cmd_to_call)
 
 # create folders : 
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 
 # Align chimerically with star (Sort & index with samtools & convert to Ubam if needed)
-align_STAR_chimeric(args.raw_input, args.input_read_2, out_dirs['circ_bams'], args.sample, args.file_type, args.read_type, args.STAR_index)
+align_STAR_chimeric(args.raw_input, args.input_read_2, out_dirs['circ_bams'], args.sample, args.file_type, args.read_type, args.STAR_index, args.tmp_dir)
 
 # currently sorting with star -- but might take up less memory to sort with samtools 
 # index bam with samtools 
