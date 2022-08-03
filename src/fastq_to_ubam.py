@@ -23,7 +23,7 @@ def fastq_to_ubam_SE(input_fq, output, sample_name, memory = 8):
         cmd_to_call = cmd.split()
         subprocess.check_call(cmd_to_call)
     else: 
-        logger.error('No fastq file found. Exiting.')
+        logger.error(f'No fastq file found at {input_fq}. Exiting.')
         sys.exit("No fastq file found. Exiting.")
         
 
@@ -81,8 +81,8 @@ def bam_to_ubam(input_bam, output, tmp, \
         logger.info(cmd)
         subprocess.check_call(cmd_to_call)
     else: 
-        logger.error('No input bam file found')
-        sys.exit('No input bam file found')
+        logger.error('No input bam file found.')
+        sys.exit(f'No input bam file found at {input_bam}')
 def concat_ubams(input_bam_1, input_bam_2, output, threads = 12):
     logger.info('Starting samtools concatenate')
     cmd = (f"samtools cat -b {input_bam_1} {input_bam_2} -o {output} -@ {threads}" )

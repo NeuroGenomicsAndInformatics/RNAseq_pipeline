@@ -317,7 +317,7 @@ if args.input_read_2 is not None:
 # delete the intermediate files we don't normally keep
 delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], indexed_md_bam_out)
 
-# TODO cram bams 
+# cram bams 
 cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_tin"])
 
 # TODO clean this up: copy everthing back to storage1
