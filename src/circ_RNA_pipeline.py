@@ -123,7 +123,7 @@ def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, r
                #TODO test star_chimeric_bam_SE
                #get ubam
                ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
-               bam_to_ubam(input_1, ubam_out, tmp )
+               bam_to_ubam(input_1, ubam_out, tmp , by_readgroup = 'false')
                # align with star
                star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome)
      else: 
