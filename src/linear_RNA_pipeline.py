@@ -271,7 +271,7 @@ merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, arg
 
 # 2.1.2 run fastqc on concatenated bams 
 if args.input_to_merge is not None: 
-    fastqc(out_dirs["fastqc"], args.sample, "ubam", args.input_read_type, merged_ubam_out, args.input_read_2)
+    fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
 aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"])
