@@ -297,13 +297,13 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
      if input2_merge is not None: 
           # convert input1 to ubam 
           sample_name_input2 = f"{sample_name}_input2"
-          if input_1_file_type == 'bam' & read_type == 'SE':
+          if input_1_file_type == 'bam' and read_type == 'SE':
                ubam_out_f1 = os.path.join(out_dir, f"{sample_name}_input1_unaligned.bam")
                bam_to_ubam(input1_to_merge, ubam_out_f1, tmp_dir , by_readgroup = 'false')
           # convert input2 to ubam 
           else: 
                print ("Merge is currently only writen for SE reads with input1 of type bam")
-          if input2_file_type == 'fastq' & read_type == 'SE':
+          if input2_file_type == 'fastq' and read_type == 'SE':
                ubam_out_f2 = os.path.join(out_dir, f"{sample_name}_input2_unaligned.bam")
                fastq_to_ubam_SE(input2_merge, ubam_out_f2, sample_name_input2, sample_name)
           else: 
