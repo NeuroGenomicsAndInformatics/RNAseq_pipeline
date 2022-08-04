@@ -321,7 +321,7 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 
 # merge files needed 
-merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.read_type, args.input_to_merge, args.merge_file_type, args.input_read_2, args.tmp_dir)
+merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.file_type,  args.read_type, args.input_to_merge, args.merge_file_type, args.input_read_2, args.tmp_dir, args.read_type)
 
 # Align chimerically with star (Sort & index with samtools & convert to Ubam if needed)
 align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, args.tmp_dir)
