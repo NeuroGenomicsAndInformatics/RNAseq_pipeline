@@ -32,7 +32,7 @@ parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain',
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--out_dir', help = 'directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
-
+parser.add_argument( '-d', '--delete', action ='store_true',  help = 'Include to delete the following files: _input1_input2_cat.bam, _input1_unaligned.bam, _input2_unaligned.bam' )
 
 args = parser.parse_args()
 
@@ -316,6 +316,17 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
      else: 
           return input1_to_merge, input_1_file_type
 
+def delete_extras(delete, sample_name, merged_ubam, STAR_dir):
+    if delete is True: 
+        print("Deleting extra files")
+        os.remove(merged_ubam)
+        unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
+        os.remove(unmapped_bam1)
+        unmapped_bam2 = os.path.join(STAR_dir, f"{sample_name}_input2_unaligned.bam")
+        os.remove(unmapped_bam2)
+        circ_logs.info(f'Deleting files: {merged_ubam}, {unmapped_bam1}, and {unmapped_bam2}')
+
+
 
 # create folders : 
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
@@ -329,6 +340,9 @@ align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], a
 # currently sorting with star -- but might take up less memory to sort with samtools 
 # index bam with samtools 
 index(args.sample, out_dirs['circ_bams'])
+
+# delete extra files if delete option is true 
+delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'])
 
 # TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- can this be done here? 
 

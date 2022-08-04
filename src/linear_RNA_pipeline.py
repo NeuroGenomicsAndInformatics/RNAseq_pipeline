@@ -205,15 +205,18 @@ def fastqc(out_dir, sample_name, input_file_type, input_read_type, raw_input, ra
     else: 
         fastqc_SE(raw_input, sample_name, out_dir)
 
-def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam):
+def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam, merged_ubam):
     if delete is True: 
         print("Deleting extra files")
         os.remove(aligned_bam)
         os.remove(sorted_bam)
         os.remove(indexed_bam)
         os.remove(indexed_md_bam)
+        os.remove(merged_ubam)
         unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
         os.remove(unmapped_bam)
+        unmapped_bam_input2 = os.path.join(STAR_dir, f"{sample_name}_input2_unmapped.bam")
+        os.remove(unmapped_bam_input2)
         STAR_pass1 = os.path.join(STAR_dir, f"{sample_name}._STARpass1")
         STAR_genome = os.path.join(STAR_dir,f"{sample_name}._STARgenome" )
         shutil.rmtree(STAR_pass1)
@@ -318,7 +321,7 @@ if args.input_read_2 is not None:
     os.remove(args.input_read_2)
 
 # delete the intermediate files we don't normally keep
-delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], indexed_md_bam_out)
+delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], indexed_md_bam_out, merged_ubam_out)
 
 # cram bams 
 cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_tin"])
