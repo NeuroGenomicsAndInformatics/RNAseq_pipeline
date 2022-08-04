@@ -248,7 +248,7 @@ def index(sample_name, out_dir):
      if args.read_type == 'PE': 
           sorted_bam = f"{out_prefix}_Unified.Aligned.sortedByCoord.out.bam"
      else: 
-          sorted_bam = f"{out_prefix}_R1.Aligned.sortedByCoord.out.bam"
+          sorted_bam = f"{out_prefix}.Aligned.sortedByCoord.out.bam"
      index_samtools(sorted_bam)
 
 def revert_bam(input_aligned_bam, out_dir):
