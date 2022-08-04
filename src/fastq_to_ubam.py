@@ -9,7 +9,7 @@ import sys
 logger = logging.getLogger('linear_RNA_pipeline')
 
 # define function to convert fastq to ubam
-def fastq_to_ubam_SE(input_fq, output, sample_name, memory = 8):
+def fastq_to_ubam_SE(input_fq, output, sample_name, rg_name = 'A', memory = 8):
     input_exists = os.path.exists(input_fq)
     logger.info('Running fastq to ubam')
     if (input_exists): 
@@ -17,6 +17,7 @@ def fastq_to_ubam_SE(input_fq, output, sample_name, memory = 8):
             f" -FASTQ {input_fq}"
             f" -O {output}"
             f" -SM {sample_name}"
+            f" -RG {rg_name}"
             )
         print('Command:'+ cmd)
         logger.info('Command: {cmd}')
@@ -27,7 +28,7 @@ def fastq_to_ubam_SE(input_fq, output, sample_name, memory = 8):
         sys.exit("No fastq file found. Exiting.")
         
 
-def fastq_to_ubam_PE(input_fq_1, input_fq_2, output, sample_name, memory = 8):
+def fastq_to_ubam_PE(input_fq_1, input_fq_2, output, sample_name, rg_name = 'A',  memory = 8):
     logger.info('Running fastq to ubam')
     fq1_exists = os.path.exists(input_fq_1)
     fq2_exists = os.path.exists(input_fq_2)
@@ -36,6 +37,7 @@ def fastq_to_ubam_PE(input_fq_1, input_fq_2, output, sample_name, memory = 8):
             f' F1={input_fq_1} F2={input_fq_2}'
             f' O={output}'
             f' SM={sample_name}'
+            f' RG={rg_name}'
         )
         print ('Command:' + cmd) 
         logger.info(cmd)

@@ -152,17 +152,17 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
         output_dirs = {"fastqc": out_dir, "linear_tin": out_dir, "quant": out_dir, "tin_summary": out_dir, "multiqc":out_dir }
     return output_dirs
 
-def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input_read_2, tmp_dir ):
+def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input_read_2, tmp_dir, rg_name  = 'A'):
     ubam_out = os.path.join(out_dir, f"{sample_name}_unmapped.bam")
     if file_type == 'fastq': 
         print('Converting fastq to ubam')
         if read_type == 'PE':
             print('Using ' + raw_input + ' and ' + input_read_2 +' as input for ummaped bam')
-            fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name)
+            fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name, rg_name)
             star_input = ubam_out
         else: 
             print('Converting single fq to unmapped bam')
-            fastq_to_ubam_SE(raw_input, ubam_out, sample_name)
+            fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
         star_input = ubam_out
 
     elif args.file_type == 'bam':  
@@ -232,13 +232,14 @@ def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
         os.remove(mark_dups_bam)
 
 
-#  Note: currently only setup to work with SE reads
+#  Note: currently only setup to work with SE reads -- for MSBB 
 def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, read_type, read_2, tmp_dir):
     if input_2 is not None:
         # fix sample names so they are different 
         sample_name_input2 = f"{sample_name}_input2"
         # convert second file to ubam (first file should already be)
-        input_2_ubam = convert_to_ubam(out_dir, sample_name_input2, input_2_file_type, read_type, input_2, read_2, tmp_dir)
+        #using sample_name as RG -- because that's what the RG for the bam file is in MSBB
+        input_2_ubam = convert_to_ubam(out_dir, sample_name_input2, input_2_file_type, read_type, input_2, read_2, tmp_dir, sample_name)
         # concatenate with samtools 
         unmapped_cat_bam = os.path.join(out_dir, f"{sample_name}_input1_input2_cat.bam")
         concat_ubams(input_1_ubam, input_2_ubam, unmapped_cat_bam)
