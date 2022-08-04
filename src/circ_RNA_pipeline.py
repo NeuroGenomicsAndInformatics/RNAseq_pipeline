@@ -19,9 +19,11 @@ parser = argparse.ArgumentParser(description='Run circular RNAseq pipeline')
 # to do maybe make this one argument that sometimes needs two values
 parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', required = True)
 parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data')
+# TODO  maybe add a crammed option? 
+parser.add_argument('--file_type', help = 'Input file 1 (and read 2) type', choices = ["ubam", "fastq", "bam"], required = True) 
+parser.add_argument('--input_to_merge', help = 'Path to secondary input file to concatenate with primary input (ie MSBB which is separated into aligned and unaligend reads)')
+parser.add_argument('--merge_file_type', help = 'Input file type for --input_to_merge', choices = ["ubam", "fastq", "bam"], default = "fastq")
 parser.add_argument('--sample', help = 'Sample name', required = True)
-# TODO double check that the three options here makes sense -- maybe add a crammed option? 
-parser.add_argument('--file_type', help = 'Input file type', choices = ["ubam", "fastq", "bam"], required = True) 
 parser.add_argument('--tmp_dir', help ='Path to directory for temporary files', required = True)
 parser.add_argument('--read_type', help = 'Paired end or Single end reads', choices = ['PE', 'SE'], required = True)
 parser.add_argument('--stranded', help = 'Include for strand specific libraries', default = "NONE", choices = ["NONE", "FIRST_READ_TRANSCRIPTION_STRAND", "SECOND_READ_TRANSCRIPTION_STRAND"])
@@ -30,6 +32,7 @@ parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain',
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--out_dir', help = 'directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
+
 
 args = parser.parse_args()
 
@@ -289,11 +292,39 @@ def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
      cmd_to_call = cmd.split()
      subprocess.check_call(cmd_to_call)
 
+def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2_merge, input2_file_type, input1_read_two, tmp_dir, read_type ):
+     print("Still need to write this")
+     if input2_merge is not None: 
+          # convert input1 to ubam 
+          sample_name_input2 = f"{sample_name}_input2"
+          if input_1_file_type == 'bam' & read_type == 'SE':
+               ubam_out_f1 = os.path.join(out_dir, f"{sample_name}_input1_unaligned.bam")
+               bam_to_ubam(input1_to_merge, ubam_out_f1, tmp_dir , by_readgroup = 'false')
+          # convert input2 to ubam 
+          else: 
+               print ("Merge is currently only writen for SE reads with input1 of type bam")
+          if input2_file_type == 'fastq' & read_type == 'SE':
+               ubam_out_f2 = os.path.join(out_dir, f"{sample_name}_input2_unaligned.bam")
+               fastq_to_ubam_SE(input2_merge, ubam_out_f2, sample_name_input2, sample_name)
+          else: 
+               print ("Merge is currently only writen for SE reads with input2 of type fastq")
+
+          # merge ubams 
+          cat_ubam = os.path.join(out_dir, f"{sample_name}_input1_input2_cat.bam")
+          concat_ubams(ubam_out_f1, ubam_out_f2, cat_ubam)
+          return cat_ubam, 'ubam'
+     else: 
+          return input1_to_merge, input_1_file_type
+
+
 # create folders : 
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 
+# merge files needed 
+merged_ubam_out, merged_file_type = merge_files(out_dirs["linear_tin"], args.sample, args.raw_input, args.read_type, args.input_to_merge, args.merge_file_type, args.input_read_2, args.tmp_dir)
+
 # Align chimerically with star (Sort & index with samtools & convert to Ubam if needed)
-align_STAR_chimeric(args.raw_input, args.input_read_2, out_dirs['circ_bams'], args.sample, args.file_type, args.read_type, args.STAR_index, args.tmp_dir)
+align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, args.tmp_dir)
 
 # currently sorting with star -- but might take up less memory to sort with samtools 
 # index bam with samtools 
