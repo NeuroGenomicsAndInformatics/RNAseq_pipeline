@@ -316,9 +316,10 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
      else: 
           return input1_to_merge, input_1_file_type
 
-def delete_extras(delete, sample_name, merged_ubam, STAR_dir):
-    if delete is True: 
+def delete_extras(delete, sample_name, merged_ubam, STAR_dir, input2_merge):
+    if delete is True and input2_merge is not None: 
         print("Deleting extra files")
+        os.remove(input2_merge)
         os.remove(merged_ubam)
         unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
         os.remove(unmapped_bam1)
@@ -342,7 +343,7 @@ align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], a
 index(args.sample, out_dirs['circ_bams'])
 
 # delete extra files if delete option is true 
-delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'])
+delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'], args.input_to_merge)
 
 # TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- can this be done here? 
 
