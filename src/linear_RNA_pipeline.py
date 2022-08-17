@@ -3,6 +3,7 @@ import argparse
 import logging
 import sys
 import shutil
+import re
 
 sys.path.append("/src")
 from fastq_to_ubam import *
@@ -234,6 +235,13 @@ def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
         linear_logs.info(f"Deleting {mark_dups_bam}")
         os.remove(mark_dups_bam)
 
+def get_MSBB_read_group(sample_name):
+    #MSBB read group ID is just the sample name UNLESS it has a third _ in name -- then it is everything before this underscore
+    regex = re.compile('^[^_]+_[^_]+_[^_]+')
+    read_group_id = regex.findall(sample_name)
+    return read_group_id
+
+
 
 #  Note: currently only setup to work with SE reads -- for MSBB 
 def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, read_type, read_2, tmp_dir):
@@ -241,8 +249,9 @@ def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, 
         # fix sample names so they are different 
         sample_name_input2 = f"{sample_name}_input2"
         # convert second file to ubam (first file should already be)
-        #using sample_name as RG -- because that's what the RG for the bam file is in MSBB
-        input_2_ubam = convert_to_ubam(out_dir, sample_name_input2, input_2_file_type, read_type, input_2, read_2, tmp_dir, sample_name)
+        #get the read group for MSBB -- TODO probably should make this check if this is MSBB
+        msbb_read_group = get_MSBB_read_group(sample_name)
+        input_2_ubam = convert_to_ubam(out_dir, sample_name_input2, input_2_file_type, read_type, input_2, read_2, tmp_dir, msbb_read_group)
         # concatenate with samtools 
         unmapped_cat_bam = os.path.join(out_dir, f"{sample_name}_input1_input2_cat.bam")
         concat_ubams(input_1_ubam, input_2_ubam, unmapped_cat_bam)
