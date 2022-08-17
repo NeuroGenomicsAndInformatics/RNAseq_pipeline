@@ -238,7 +238,7 @@ def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
 def get_MSBB_read_group(sample_name):
     #MSBB read group ID is just the sample name UNLESS it has a third _ in name -- then it is everything before this underscore
     regex = re.compile('^[^_]+_[^_]+_[^_]+')
-    read_group_id = regex.findall(sample_name)
+    read_group_id = regex.findall(sample_name)[0]
     return read_group_id
 
 
