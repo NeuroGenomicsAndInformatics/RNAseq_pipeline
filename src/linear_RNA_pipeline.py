@@ -213,6 +213,7 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
         os.remove(sorted_bam)
         os.remove(indexed_bam)
         os.remove(indexed_md_bam)
+        #TODO remove the input to merge if it exists 
         os.remove(merged_ubam)
         unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
         os.remove(unmapped_bam)
