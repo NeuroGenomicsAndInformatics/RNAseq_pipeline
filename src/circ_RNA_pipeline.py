@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+import re
 
 
 sys.path.append("/src")
@@ -292,6 +293,12 @@ def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
      cmd_to_call = cmd.split()
      subprocess.check_call(cmd_to_call)
 
+def get_MSBB_read_group(sample_name):
+    #MSBB read group ID is just the sample name UNLESS it has a third _ in name -- then it is everything before this underscore
+    regex = re.compile('^[^_]+_[^_]+_[^_]+')
+    read_group_id = regex.findall(sample_name)[0]
+    return read_group_id
+
 def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2_merge, input2_file_type, input1_read_two, tmp_dir, read_type ):
      print("Still need to write this")
      if input2_merge is not None: 
@@ -305,7 +312,8 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
                print ("Merge is currently only writen for SE reads with input1 of type bam")
           if input2_file_type == 'fastq' and read_type == 'SE':
                ubam_out_f2 = os.path.join(out_dir, f"{sample_name}_input2_unaligned.bam")
-               fastq_to_ubam_SE(input2_merge, ubam_out_f2, sample_name_input2, sample_name)
+               msbb_read_group = get_MSBB_read_group(sample_name)
+               fastq_to_ubam_SE(input2_merge, ubam_out_f2, sample_name_input2, msbb_read_group)
           else: 
                print ("Merge is currently only writen for SE reads with input2 of type fastq")
 
