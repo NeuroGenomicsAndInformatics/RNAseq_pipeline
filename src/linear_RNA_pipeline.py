@@ -325,7 +325,7 @@ shutil.move(tin_xls_current, tin_xls_new_loc)
 # TODO run mulitqc -- this is normally run on all the samples together, so perhaps not?? -- maybe have last all complete function? 
 
 ## 9. Clean up
-#  Remove raw data 
+#  Remove raw data #TODO maybe only do this when delete flag is turned on -- might be misleading 
 os.remove(args.raw_input)
 if args.input_read_2 is not None:
     os.remove(args.input_read_2)
