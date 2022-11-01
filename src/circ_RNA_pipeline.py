@@ -103,7 +103,7 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
           print(f'Circ_processed dir: {circ_proccessed_dir}')
           create_out_dir(circ_proccessed_dir)
           #  03-AnalysisReady/01-Brain/03-Circular/${SAMPLEID} -- DCC ouoput -- CircRNACount, CircCoordinates, Linear_Count, Circ Skip junctions
-          circ_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/01-Brain/03-Circular', cohort_name)
+          circ_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '03-Circular', cohort_name)
           print(f'Circ analaysis dir: {circ_analysis_dir}')
           create_out_dir(circ_analysis_dir)
           output_dirs = { "circ_bams": circ_proccessed_dir,  "DCC_out": circ_analysis_dir}
