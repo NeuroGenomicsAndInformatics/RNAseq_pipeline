@@ -6,7 +6,6 @@ logger = logging.getLogger('linear_RNA_pipeline')
 
 def fastqc_fastq_PE(R1_fastq, R2_fastq, sample_id, fastqc_out_dir):
     print('Running fastqc')
-    # TODO -- check if input exists here 
     cmd1 = (f"/opt/FastQC-0.11.9/fastqc"
         f" {R1_fastq}" 
         f" -o {fastqc_out_dir}"

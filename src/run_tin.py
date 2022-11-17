@@ -7,7 +7,6 @@ def calc_tin(input_md_bam, reference):
     cmd = (f'tin.py -i {input_md_bam}'
     f' -r {reference}')
     print ('Command:' + cmd) 
-    #TODO figure out how to fix this now
     logger.info('Starting TIN')
     logger.info(f'Command:{cmd}')
     cmd_to_call = cmd.split()
