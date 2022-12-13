@@ -15,7 +15,7 @@ from run_STAR_js import index_samtools, sort_samtools
 
 
 
-# TODO argparse to get all the input
+# argparse to get all the input
 parser = argparse.ArgumentParser(description='Run circular RNAseq pipeline')
 # to do maybe make this one argument that sometimes needs two values
 parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', required = True)
@@ -49,7 +49,6 @@ if args.out_struct == 'hydra' and args.tissue is None:
 if args.raw_input == args.input_read_2: 
     parser.error('--input_read_2 and --raw_input cannot be the same file. Please check input.')
 
-# TODO step to move from our server to storage1 (perhaps make this flexible?)
 
 
 # TODO step to move from storage1 to scratch? 
@@ -120,11 +119,10 @@ def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, r
                star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome)
      elif file_type == "bam":
           if read_type == 'PE':
-               #TODO star_chimeric_bam_PE
-               revert_bam(input_1, bam_out_dir) #TODO not sure if this needs to be different to separate out reads 
+               # star_chimeric_bam_PE
+               #revert_bam(input_1, bam_out_dir) #TODO remove this?
                star_chimeric_bam_PE(input_1, bam_out_dir)
           else:
-               #TODO test star_chimeric_bam_SE
                #get ubam
                ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
                bam_to_ubam(input_1, ubam_out, tmp , by_readgroup = 'false')
@@ -257,11 +255,50 @@ def index(sample_name, out_dir):
 
 def revert_bam(input_aligned_bam, out_dir):
      #TODO write this 
-     print("Still need to write this")
+     print("This step is not currently supported by this pipline, check for updates if needed")
 
-def star_chimeric_bam_PE(input_ubam, out_dir):
-     #TODO I need to write this 
-     print('Still need to write this')
+def sort_readname(input_ubam, out_dir, sample_name):
+     out_prefix = os.path.join(out_dir, sample_name)
+     sorted_readname_bam = f"{out_prefix}.Aligned.sortedByReadname.out.bam"
+     cmd = (
+          f'samtools sort -n'
+          f' -o {sorted_readname_bam}'
+          f' {input_ubam}'
+     )
+     print('Command:' + cmd)
+     logger.info(cmd)
+     cmd_to_call = cmd.split()
+     subprocess.check_call(cmd_to_call)
+     return sorted_readname_bam
+
+def bam_to_fastq_PE(input_readname_bam, out_dir, sample_name):
+     out_prefix = os.path.join(out_dir, sample_name)
+     fq1 = f"{out_prefix}.R1.fastq"
+     fq2 = f"{out_prefix}.R2.fastq"
+     cmd = (
+          f'bedtools bamtofastq'
+          f' -i {input_readname_bam}'
+          f' -fq {fq1}'
+          f' -fq2 {fq2}'
+     )
+     print('Command:' + cmd)
+     logger.info(cmd)
+     cmd_to_call = cmd.split()
+     subprocess.check_call(cmd_to_call)
+     return(fq1, fq2)
+
+def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir):
+     
+     print('Testing ubam reversion')
+
+     # sort bam by read name with samtools (samtools sort -n -o aln.qsort.bam aln.bam)
+     readname_bam = sort_readname(input_ubam, out_dir, sample_name)
+
+     #bedtools bamtofastq (bedtools bamtofastq -i aln.qsort.bam -fq aln.end1.fq -fq2 aln.end2.fq)
+     fq1, fq2 = bam_to_fastq_PE(readname_bam, out_dir, sample_name)
+
+     #then just run STAR PE fastq 
+     star_chimeric_fastq_PE(fq1, fq2, sample_name, out_dir, genome_dir)
 
 def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
      read_cmd = 'samtools view -h', thread_N = 12):
@@ -300,7 +337,7 @@ def get_MSBB_read_group(sample_name):
     return read_group_id
 
 def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2_merge, input2_file_type, input1_read_two, tmp_dir, read_type ):
-     print("Still need to write this")
+     
      if input2_merge is not None: 
           # convert input1 to ubam 
           sample_name_input2 = f"{sample_name}_input2"
@@ -353,8 +390,6 @@ index(args.sample, out_dirs['circ_bams'])
 # delete extra files if delete option is true 
 delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'], args.input_to_merge)
 
-# TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- can this be done here? 
+# TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- should this be done here? 
 
-# TODO run mulitqc??
 
-# TODO quantify with DCC -- perhaps leave this for a seperate image since it needs all samples
