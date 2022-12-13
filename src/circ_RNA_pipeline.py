@@ -121,7 +121,7 @@ def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, r
           if read_type == 'PE':
                # star_chimeric_bam_PE
                #revert_bam(input_1, bam_out_dir) #TODO remove this?
-               star_chimeric_bam_PE(input_1, bam_out_dir)
+               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome)
           else:
                #get ubam
                ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
