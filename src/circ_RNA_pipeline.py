@@ -273,13 +273,13 @@ def sort_readname(input_ubam, out_dir, sample_name):
 
 def bam_to_fastq_PE(input_readname_bam, out_dir, sample_name):
      out_prefix = os.path.join(out_dir, sample_name)
-     fq1 = f"{out_prefix}.R1.fastq"
-     fq2 = f"{out_prefix}.R2.fastq"
+     fq1 = f"{out_prefix}.R1.fastq.gz"
+     fq2 = f"{out_prefix}.R2.fastq.gz"
      cmd = (
-          f'bedtools bamtofastq'
-          f' -i {input_readname_bam}'
-          f' -fq {fq1}'
-          f' -fq2 {fq2}'
+          f'samtools fastq'
+          f' -1 {fq1}'
+          f' -2 {fq2}'
+          f' {input_readname_bam}'
      )
      print('Command:' + cmd)
      logger.info(cmd)
