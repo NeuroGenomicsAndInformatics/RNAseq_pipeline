@@ -21,8 +21,8 @@ from run_fastqc import fastqc_fastq_PE, fastqc_SE
 # Argparse to get all the input
 parser = argparse.ArgumentParser(description='Run linear RNAseq pipeline')
 # to do maybe make this one argument that sometimes needs two values
-parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', required = True)
-parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data')
+parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', nargs = '+', required= True)
+parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data', nargs = '*')
 parser.add_argument('--sample', help = 'Sample name', required = True)
 # TODO double check that the three options here makes sense -- maybe add a crammed option? 
 parser.add_argument('--file_type', help = 'Input file type for -r1 and -r2', choices = ["ubam", "fastq", "bam"], required = True) 
@@ -156,15 +156,16 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
 def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input_read_2, tmp_dir, rg_name  = 'A'):
     ubam_out = os.path.join(out_dir, f"{sample_name}_unmapped.bam")
     if file_type == 'fastq': 
-        print('Converting fastq to ubam')
-        if read_type == 'PE':
-            print('Using ' + raw_input + ' and ' + input_read_2 +' as input for ummaped bam')
-            fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name, rg_name)
-            star_input = ubam_out
-        else: 
-            print('Converting single fq to unmapped bam')
-            fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
-        star_input = ubam_out
+        print('Not converting to ubam, just using fastqs for STAR')
+        #print('Converting fastq to ubam')
+        #if read_type == 'PE':
+        #    print('Using ' + raw_input + ' and ' + input_read_2 +' as input for ummaped bam')
+        #    fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name, rg_name)
+        #    star_input = ubam_out
+        #else: 
+        #    print('Converting single fq to unmapped bam')
+        #    fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
+        #star_input = ubam_out
 
     elif args.file_type == 'bam':  
         bam_to_ubam(raw_input, ubam_out, tmp_dir, by_readgroup = 'false'),
