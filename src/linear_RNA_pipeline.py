@@ -224,7 +224,7 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
             print('Deleting aligned bam')
             os.remove(aligned_bam)
             linear_logs.info(f'Deleting file: {aligned_bam}')
-        if 'md_bam' in args.delete: 
+        if 'md_bam' in args.delete and args.cram is not True: # added cram qualification -- cramming is turned on then this file won't exist
             print('Deleting md bam')
             os.remove(md_bam)
             linear_logs.info(f'Deleting file: {md_bam}')
@@ -356,18 +356,13 @@ tin_xls_new_loc = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.s
 shutil.move(tin_summary_current, tin_summary_new_loc)
 shutil.move(tin_xls_current, tin_xls_new_loc)
 
-
+# cram bams 
+cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_tin"])
 
 ## 9. Clean up
-#  Remove raw data #TODO maybe only do this when delete flag is turned on -- might be misleading 
-os.remove(args.raw_input)
-if args.input_read_2 is not None:
-    os.remove(args.input_read_2)
-
-# delete the intermediate files we don't normally keep
+# delete the intermediate files we don't normally keep -- as requested by user with --delete argument
 delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], \
     indexed_md_bam_out, merged_ubam_out, args.input_to_merge, mark_dups_bam_out, aligned_transcript_bam_out)
 
-# cram bams 
-cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_tin"])
+
 
