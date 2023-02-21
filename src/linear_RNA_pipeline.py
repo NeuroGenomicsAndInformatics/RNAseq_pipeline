@@ -216,7 +216,7 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
         if 'input' in args.delete: 
             print('Deleting input file(s)')
             os.remove(args.raw_input)
-            linear_logs.info(f'Deleting file: {raw_input}')
+            linear_logs.info(f'Deleting file: {args.raw_input}')
             if args.input_read_2 is not None:
                 os.remove(args.input_read_2)
                 linear_logs.info(f'Deleting file: {input_2}')
