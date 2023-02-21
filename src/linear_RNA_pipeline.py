@@ -362,7 +362,7 @@ cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_
 ## 9. Clean up
 # delete the intermediate files we don't normally keep -- as requested by user with --delete argument
 delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], \
-    indexed_md_bam_out, merged_ubam_out, args.input_to_merge, mark_dups_bam_out, aligned_transcript_bam_out)
+    indexed_md_bam_out, merged_ubam_out, args.input_to_merge, aligned_transcript_bam_out, mark_dups_bam_out)
 
 
 
