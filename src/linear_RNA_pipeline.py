@@ -42,7 +42,7 @@ parser.add_argument('--out_dir', help = 'Directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
 parser.add_argument( '-d', '--delete',\
     nargs = '*',\
-    choices = ["input", "aligned_bam", "aligned_sorted_bam", "bais", "STAR_extras", "ubam", "aligned_transcriptome_bam", 'md_bam'],\
+    choices = ["input", "aligned_bam", "aligned_sorted_bam", "bais", "STAR_extras", "ubam", "aligned_transcriptome_bam", "md_bam"],\
     help = 'Include to delete one or more following files: input files, .Aligned.out.bam, Aligned.sortedByCoord.out.bam, all .bai files,\
          ._STARgenome and ._STARpass1, _unmapped.bam, .Aligned.toTranscriptome.out.bam, and .Aligned.sortedByCoord.out.md.bam respectively')
 parser.add_argument('-c', '--cram', action = 'store_true', help = 'Cram the following bams: Aligned.sortedByCoord.out.md.bam')
