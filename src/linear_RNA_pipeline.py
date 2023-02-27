@@ -224,7 +224,7 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
             print('Deleting aligned bam')
             os.remove(aligned_bam)
             linear_logs.info(f'Deleting file: {aligned_bam}')
-        if 'md_bam' in args.delete and args.cram is not True: # added cram qualification -- cramming is turned on then this file won't exist
+        if 'md_bam' in args.delete and args.cram is not True: # added cram qualification -- if cramming is turned on then this file won't exist
             print('Deleting md bam')
             os.remove(md_bam)
             linear_logs.info(f'Deleting file: {md_bam}')
