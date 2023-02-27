@@ -33,8 +33,11 @@ parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain',
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--out_dir', help = 'directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
-parser.add_argument( '-d', '--delete', action ='store_true',  help = 'Include to delete the following files: _input1_input2_cat.bam, _input1_unaligned.bam, _input2_unaligned.bam' )
-
+parser.add_argument( '-d', '--delete',\
+    nargs = '*',\
+    choices = ["input", "ubam"],\
+    help = 'Include to delete one or more following files: input files,\
+          and _unmapped.bam, respectively')
 args = parser.parse_args()
 
 
@@ -362,15 +365,26 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
           return input1_to_merge, input_1_file_type
 
 def delete_extras(delete, sample_name, merged_ubam, STAR_dir, input2_merge):
-    if delete is True and input2_merge is not None: 
-        print("Deleting extra files")
-        os.remove(input2_merge)
-        os.remove(merged_ubam)
-        unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
-        os.remove(unmapped_bam1)
-        unmapped_bam2 = os.path.join(STAR_dir, f"{sample_name}_input2_unaligned.bam")
-        os.remove(unmapped_bam2)
-        circ_logs.info(f'Deleting files: {merged_ubam}, {unmapped_bam1}, and {unmapped_bam2}')
+     if delete is not None: 
+          print("Deleting files specified with --delete option")
+          if 'input' in args.delete: 
+               print('Deleting input file(s)')
+               os.remove(args.raw_input)
+               circ_logs.info(f'Deleting file: {args.raw_input}')
+               if args.input_read_2 is not None:
+                    os.remove(args.input_read_2)
+                    circ_logs.info(f'Deleting file: {args.input_read_2}')
+               if input2_merge is not None: 
+                    os.remove(input2_merge)
+                    circ_logs.info(f'Deleting file: {input2_merge}')
+          if 'ubam' in args.delete:
+                    print('Deleting ubam file(s)')
+                    os.remove(merged_ubam)
+                    unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
+                    os.remove(unmapped_bam1)
+                    unmapped_bam2 = os.path.join(STAR_dir, f"{sample_name}_input2_unaligned.bam")
+                    os.remove(unmapped_bam2)
+                    circ_logs.info(f'Deleting files: {merged_ubam}, {unmapped_bam1}, and {unmapped_bam2}')
 
 
 
@@ -390,6 +404,5 @@ index(args.sample, out_dirs['circ_bams'])
 # delete extra files if delete option is true 
 delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'], args.input_to_merge)
 
-# TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- should this be done here? 
 
 
