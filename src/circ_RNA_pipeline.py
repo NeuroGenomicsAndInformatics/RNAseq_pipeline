@@ -377,7 +377,8 @@ def delete_extras(delete, sample_name, merged_ubam, STAR_dir, input2_merge):
                if input2_merge is not None: 
                     os.remove(input2_merge)
                     circ_logs.info(f'Deleting file: {input2_merge}')
-          if 'ubam' in args.delete:
+          if 'ubam' in args.delete and input2_merge is not None:
+                    # These files are all only made if merging bams 
                     print('Deleting ubam file(s)')
                     os.remove(merged_ubam)
                     unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
