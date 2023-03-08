@@ -3,6 +3,8 @@
 #########################################################################
 FROM ubuntu:18.04
 
+# timezone = CST
+ENV TZ=America/Chicago
 
 RUN apt-get update && apt-get install -y software-properties-common && \
     apt-get update && apt-get install -y \
@@ -141,6 +143,9 @@ RUN apt-get install -y r-base
 
 # install R Packages
 RUN R -e "install.packages(c('stringr'), repos='http://cran.us.r-project.org')"
+
+# set timezone 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # clean up
 RUN apt-get clean && \
