@@ -30,7 +30,7 @@ parser.add_argument('--tmp_dir', help ='Path to directory for temporary files', 
 parser.add_argument('--read_type', help = 'Paired end or Single end reads', choices = ['PE', 'SE'], required = True)
 parser.add_argument('--stranded', help = 'Include for strand specific libraries', default = "NONE", choices = ["NONE", "FIRST_READ_TRANSCRIPTION_STRAND", "SECOND_READ_TRANSCRIPTION_STRAND"])
 parser.add_argument('--cohort', help = 'Full RNAseq cohort name', required = True )
-parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain', 'blood_pax', 'ipsc', 'plasma', 'csf'])
+parser.add_argument('--tissue', help = 'Sample tissue type for hydra dir path', choices = ['brain', 'blood_pax', 'ipsc', 'plasma', 'csf'])
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--ref_flat', help = "Path to reference annotation in flat format", required = True)
 parser.add_argument('--annotation', help = "Path to annotaiton file for Salmon", required = True)
@@ -64,10 +64,6 @@ if args.out_struct == 'hydra' and args.tissue is None:
 if args.raw_input == args.input_read_2: 
     parser.error('--input_read_2 and --raw_input cannot be the same file. Please check input.')
 
-# TODO step to move from our server to storage1 (perhaps make this flexible?)
-
-
-# TODO step to move from storage1 to scratch? 
 
 
 # set up logs
@@ -306,6 +302,10 @@ check_refs_exist(args.STAR_index, args.ref_flat, args.annotation, args.annote_be
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
 salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
+
+# 0.3 set up tmp dir 
+create_out_dir(args.tmp_dir)
+print(f'''tmp location: {args.tmp_dir}''')
 
 # 1. Run fastqc (if we don't need to merge files first)
 if args.input_to_merge is None: 
