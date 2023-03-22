@@ -174,7 +174,7 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
         star_input = raw_input
     return star_input
 
-def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir):
+def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, tmp_dir):
     out_prefix = os.path.join(out_dir, f'{sample_name}.')
    # if read_type == 'bam':
    #     print('Aligning ubams with star')
@@ -182,7 +182,7 @@ def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir):
    # else:   
     print('Aligning ubam with STAR')
     STAR_file_input = "SAM "+ read_type
-    align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index)
+    align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index, tmp_dir)
     aligned_bam_out =  f"{out_prefix}Aligned.out.bam"
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
     return (aligned_bam_out, aligned_transcript_bam)
@@ -322,7 +322,7 @@ if args.input_to_merge is not None:
     fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"])
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.tmp_dir)
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
