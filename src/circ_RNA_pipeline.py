@@ -117,34 +117,35 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
 def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, read_type, star_genome, tmp):
      if file_type == 'fastq': 
           if read_type == 'PE':
-               star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, star_genome)
+               star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, star_genome, tmp)
           else: 
-               star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome)
+               star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome, tmp)
      elif file_type == "bam":
           if read_type == 'PE':
                # star_chimeric_bam_PE
                #revert_bam(input_1, bam_out_dir) #TODO remove this?
-               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome, tmp)
           else:
                #get ubam
                ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
                bam_to_ubam(input_1, ubam_out, tmp , by_readgroup = 'false')
                # align with star
-               star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome, tmp)
      else: 
           if read_type == 'PE':
                #TODO star_chimeric_bam_PE
-               star_chimeric_bam_PE(input_1, bam_out_dir)
+               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome, tmp)
           else:
                #TODO test star_chimeric_bam_SE
-               star_chimeric_bam_SE(input_1, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_SE(input_1, bam_out_dir, sample_name, star_genome, tmp)
 
-def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, thread_N = 12):
+def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, tmp_dir, thread_N = 12):
      # run for both mates toghter
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_Unified.')
      cmd_both_mates = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {tmp_dir}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1} {input_2}'
           f' --readFilesCommand zcat' # not sure if this works if they aren't zipped
@@ -171,6 +172,7 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      cmd_mate1 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {tmp_dir}'
           f' --outSAMtype None'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -198,6 +200,7 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      cmd_mate2 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {tmp_dir}'
           f' --outSAMtype None'
           f' --readFilesIn {input_2}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -221,11 +224,12 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      cmd_to_call_mate2 = cmd_mate2.split()
      subprocess.check_call(cmd_to_call_mate2)
 
-def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir, thread_N = 12):
+def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir,tmp_dir, thread_N = 12):
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_R1.')
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {tmp_dir}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -290,7 +294,7 @@ def bam_to_fastq_PE(input_readname_bam, out_dir, sample_name):
      subprocess.check_call(cmd_to_call)
      return(fq1, fq2)
 
-def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir):
+def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir, tmp):
      
      print('Testing ubam reversion')
 
@@ -301,15 +305,16 @@ def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir):
      fq1, fq2 = bam_to_fastq_PE(readname_bam, out_dir, sample_name)
 
      #then just run STAR PE fastq 
-     star_chimeric_fastq_PE(fq1, fq2, sample_name, out_dir, genome_dir)
+     star_chimeric_fastq_PE(fq1, fq2, sample_name, out_dir, genome_dir, tmp)
 
-def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
+def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, tmp_dir, \
      read_cmd = 'samtools view -h', thread_N = 12):
      output_prefix = os.path.join(out_dir, f'{sample_name}.')
      STAR_file_input = "SAM SE"
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {tmp_dir}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_ubam}'
           f' --readFilesType {STAR_file_input}'
