@@ -25,11 +25,12 @@ def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, tmp_
     logger.info('Starting STAR alingment')
     input_exists = os.path.exists(input)
     if (input_exists):
+        star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
         #TODO note: file_read_type needs to be either SAM SE or SAM PE I think
         cmd = (f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runMode alignReads'
             f' --runThreadN {n_thrd}'
             f' --genomeDir {genome_dir}'
-            f' --outTmpDir {tmp_dir}'
+            f' --outTmpDir {star_tmp}'
             f' --twopassMode {two_pass_mode}'
             f' --outFilterMismatchNmax {mismatch_max}'
             f' --outFilterMultimapNmax {multimap_max}'
