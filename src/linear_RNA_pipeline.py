@@ -304,7 +304,7 @@ print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin pr
 salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
 
 # 0.3 set up tmp dir -- include JOB ID in path to prevent conflicts
-tmp_dir_path = os.path.join(args.tmp_dir, '$LSB_JOBID')
+tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
 create_out_dir(tmp_dir_path)
 print(f'''tmp location: {tmp_dir_path}''')
 
