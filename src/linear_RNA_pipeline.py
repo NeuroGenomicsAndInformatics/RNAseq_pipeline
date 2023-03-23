@@ -303,26 +303,27 @@ out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.ti
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
 salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
 
-# 0.3 set up tmp dir 
-create_out_dir(args.tmp_dir)
-print(f'''tmp location: {args.tmp_dir}''')
+# 0.3 set up tmp dir -- include JOB ID in path to prevent conflicts
+tmp_dir_path = os.path.join(args.tmp_dir, '$LSB_JOBID')
+create_out_dir(tmp_dir_path)
+print(f'''tmp location: {tmp_dir_path}''')
 
 # 1. Run fastqc (if we don't need to merge files first)
 if args.input_to_merge is None: 
     fastqc(out_dirs["fastqc"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2) 
 
 # 2. convert to Ubam (from fastq or aligned bam)
-ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, args.tmp_dir)
+ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, tmp_dir_path)
 
 # 2.1 concatenate if needed 
-merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, args.input_to_merge, args.merge_file_type, args.read_type, args.input_read_2, args.tmp_dir)
+merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, args.input_to_merge, args.merge_file_type, args.read_type, args.input_read_2, tmp_dir_path)
 
 # 2.1.2 run fastqc on concatenated bams 
 if args.input_to_merge is not None: 
     fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.tmp_dir)
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], tmp_dir_path)
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
@@ -332,12 +333,12 @@ indexed_bam_out = index(sorted_bam_out)
 
 # 6. Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) 
 RNAseq_metrics_out = os.path.join(out_dirs["fastqc"], f"{args.sample}.RNA_Metrics.txt")
-picard_collect_RNA_metrics(sorted_bam_out, RNAseq_metrics_out, args.ref_flat, args.rib_int, args.tmp_dir, args.stranded)
+picard_collect_RNA_metrics(sorted_bam_out, RNAseq_metrics_out, args.ref_flat, args.rib_int, tmp_dir_path, args.stranded)
 Alignment_metrics_out = os.path.join(out_dirs["fastqc"], f"{args.sample}.Summary_metrics.txt")
-picard_collect_alignment_metrics(sorted_bam_out, Alignment_metrics_out, args.tmp_dir, args.adapter_seq)
+picard_collect_alignment_metrics(sorted_bam_out, Alignment_metrics_out, tmp_dir_path, args.adapter_seq)
 mark_dups_bam_out = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.sortedByCoord.out.md.bam")
 mark_dups_txt_out = os.path.join(out_dirs["fastqc"],f"{args.sample}.marked_dup_metrics.txt")
-picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, args.tmp_dir )
+picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, tmp_dir_path )
 
 # 7. quantify with salmon 
 salmon_out = os.path.join(out_dirs["quant"],f'{args.sample}.salmon')
