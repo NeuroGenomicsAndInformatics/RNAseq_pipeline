@@ -142,10 +142,11 @@ def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, r
 def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, tmp_dir, thread_N = 12):
      # run for both mates toghter
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_Unified.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_both_mates = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
-          f' --outTmpDir {tmp_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1} {input_2}'
           f' --readFilesCommand zcat' # not sure if this works if they aren't zipped
@@ -169,10 +170,11 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      subprocess.check_call(cmd_to_call_both)
 
      output_prefix_R1 = os.path.join(bam_out_dir, f'{sample_name}_R1.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_mate1 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
-          f' --outTmpDir {tmp_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype None'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -197,10 +199,11 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      subprocess.check_call(cmd_to_call_mate1)
 
      output_prefix_R2 = os.path.join(bam_out_dir, f'{sample_name}_R2.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_mate2 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
-          f' --outTmpDir {tmp_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype None'
           f' --readFilesIn {input_2}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -226,10 +229,11 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
 
 def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir,tmp_dir, thread_N = 12):
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_R1.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
-          f' --outTmpDir {tmp_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -311,10 +315,11 @@ def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, tmp_dir, 
      read_cmd = 'samtools view -h', thread_N = 12):
      output_prefix = os.path.join(out_dir, f'{sample_name}.')
      STAR_file_input = "SAM SE"
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
-          f' --outTmpDir {tmp_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_ubam}'
           f' --readFilesType {STAR_file_input}'
@@ -397,11 +402,17 @@ def delete_extras(delete, sample_name, merged_ubam, STAR_dir, input2_merge):
 # create folders : 
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 
+# set up tmp dir -- include JOB ID in path to prevent conflicts
+tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
+create_out_dir(tmp_dir_path)
+print(f'''tmp location: {tmp_dir_path}''')
+
+
 # merge files needed 
-merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.file_type,  args.input_to_merge, args.merge_file_type, args.input_read_2, args.tmp_dir, args.read_type)
+merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.file_type,  args.input_to_merge, args.merge_file_type, args.input_read_2, tmp_dir_path, args.read_type)
 
 # Align chimerically with star (Sort & index with samtools & convert to Ubam if needed)
-align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, args.tmp_dir)
+align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, tmp_dir_path)
 
 # currently sorting with star -- but might take up less memory to sort with samtools 
 # index bam with samtools 
