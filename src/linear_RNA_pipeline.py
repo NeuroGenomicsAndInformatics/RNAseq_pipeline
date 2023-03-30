@@ -11,7 +11,7 @@ from run_STAR_js import align_STAR_normal, align_STAR_fastq, cram_samtools, inde
 from run_Picard_QC import picard_collect_RNA_metrics, picard_collect_alignment_metrics, picard_mark_dups
 from run_Salmon import salmon_quant
 from run_tin import calc_tin
-from run_fastqc import fastqc_fastq_PE, fastqc_SE
+from run_fastqc import run_fastqc
 ################################################################################
 # Setup 
 ################################################################################
@@ -181,7 +181,7 @@ def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, fil
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
     if(file_type == 'fastq'):
         print('Aligning fastqs with STAR')
-        align_STAR_fastq(read_1, read_2, out_prefix, TODO_figure_out, STAR_index)
+        align_STAR_fastq(args.raw_input, args.input_read_2, out_prefix, STAR_index)
     else:  
         print('Aligning ubam with STAR')
         STAR_file_input = "SAM "+ read_type
@@ -201,13 +201,23 @@ def index(sorted_bam_out):
     indexed_bam_out = f"{sorted_bam_out}.bai"
     return indexed_bam_out
 
-def fastqc(out_dir, sample_name, input_file_type, input_read_type, raw_input, raw_input2):
-    if input_file_type == 'fastq' and input_read_type == 'PE': 
-        fastqc_fastq_PE(raw_input, raw_input2, sample_name, out_dir)
+def fastqc(out_dir, input_file_type, input_read_type, raw_input, raw_input2):
+    if input_file_type == 'fastq':
+        if input_read_type == 'PE' : 
+            #loop through fq each and run fastqc for them
+            for input_R1 in raw_input:
+                run_fastqc(input_R1, out_dir)
+            for input_R2 in raw_input2:
+                run_fastqc(input_R2, out_dir)
+        else:  
+            # loop through fq each and run fastqc for them
+            for input_R1 in raw_input: 
+                run_fastqc(input_R1, out_dir)
     else: 
-        fastqc_SE(raw_input, sample_name, out_dir)
+        run_fastqc(raw_input, out_dir)
 
 def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam, merged_ubam, input_2):
+    # TODO change this -- but there will be merged changes here so wait for now
     if delete is True: 
         print("Deleting extra files")
         os.remove(aligned_bam)
@@ -277,7 +287,7 @@ salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summa
 
 # 1. Run fastqc (if we don't need to merge files first)
 if args.input_to_merge is None: 
-    fastqc(out_dirs["fastqc"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2) 
+    fastqc(out_dirs["fastqc"], args.file_type, args.read_type, args.raw_input, args.input_read_2) 
 
 # 2. convert to Ubam (from fastq or aligned bam)
 ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, args.tmp_dir)
@@ -290,7 +300,7 @@ if args.input_to_merge is not None:
     fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"]. args.file_type)
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.file_type)
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
