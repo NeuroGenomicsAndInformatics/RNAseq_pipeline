@@ -89,9 +89,13 @@ def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
     out_SAM_attributes = ['NH', 'HI', 'AS', 'nM', 'NM', 'ch']):
 
     logger.info('Starting STAR alingment')
-    input1_exists = os.path.exists(input_read1)
-    input2_exists = os.path.exists(input_read2)
-    if (input1_exists and input2_exists):
+    input1_exists =[]
+    for R1_fastq in input_read1:
+        input1_exists = os.path.exists(R1_fastq)
+    input2_exists = []
+    for R2_fastq in input_read2:
+        input2_exists = os.path.exists(input_read2)
+    if (all(input1_exists) and all(input2_exists)):
         cmd = (f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runMode alignReads'
             f' --runThreadN {n_thrd}'
             f' --genomeDir {genome_dir}'
