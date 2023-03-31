@@ -165,7 +165,7 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
         #else: 
         #    print('Converting single fq to unmapped bam')
         #    fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
-        #star_input = ubam_out
+        star_input = (raw_input, input_read_2)
 
     elif args.file_type == 'bam':  
         bam_to_ubam(raw_input, ubam_out, tmp_dir, by_readgroup = 'false'),
@@ -181,7 +181,7 @@ def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, fil
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
     if(file_type == 'fastq'):
         print('Aligning fastqs with STAR')
-        align_STAR_fastq(args.raw_input, args.input_read_2, out_prefix, STAR_index)
+        align_STAR_fastq(star_input[0], star_input[1], out_prefix, STAR_index)
     else:  
         print('Aligning ubam with STAR')
         STAR_file_input = "SAM "+ read_type
