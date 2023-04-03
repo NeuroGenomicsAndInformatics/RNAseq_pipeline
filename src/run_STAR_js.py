@@ -78,7 +78,7 @@ def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
     align_intron_max = '1000000', align_mates_gap_max = '1000000', \
     filter_type = 'BySJout', score_min_over_l_read = '0.33', \
     match_n_min_over_l_read = '0.33', limit_sjbd_insert_nsj = '1200000', \
-    read_cmd = 'samtools view -h', SAM_strand_field = 'intronMotif', \
+    SAM_strand_field = 'intronMotif', \
     filter_intron_motifs = 'None', soft_clip_at_ref_ends = 'Yes' , \
     quant_mode = ['TranscriptomeSAM', 'GeneCounts'], \
     out_sam_type = ['BAM', 'Unsorted'], \
@@ -115,7 +115,6 @@ def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
             f' --readFilesIn {",".join(input_read1)} {",".join(input_read2)}'
             f' --readFilesType Fastx'
             f'  --readFilesCommand {file_read_cmd}'
-            f' --readFilesCommand {read_cmd}'
             f' --outFileNamePrefix {file_out_prefix}'
             f' --outSAMstrandField {SAM_strand_field}'
             f' --outFilterIntronMotifs {filter_intron_motifs}'
