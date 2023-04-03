@@ -71,7 +71,7 @@ def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, n_th
         #quit()
 
 def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
-    file_read_type = 'zcat', n_thrd = '12', two_pass_mode = 'Basic', \
+    file_read_cmd = 'zcat', n_thrd = '12', two_pass_mode = 'Basic', \
     mismatch_max = '999',  multimap_max =  '20', \
     SJ_overhang_min = '8', SJDB_overhang_min = '1', \
     mismatch_n_over_l_max = '0.1', align_intron_min = '20', \
@@ -113,7 +113,8 @@ def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
             f' --outFilterMatchNminOverLread {match_n_min_over_l_read}'
             f' --limitSjdbInsertNsj {limit_sjbd_insert_nsj}'
             f' --readFilesIn {",".join(input_read1)} {",".join(input_read2)}'
-            f' --readFilesType {file_read_type}'
+            f' --readFilesType Fastx'
+            f'  --readFilesCommand {file_read_cmd}'
             f' --readFilesCommand {read_cmd}'
             f' --outFileNamePrefix {file_out_prefix}'
             f' --outSAMstrandField {SAM_strand_field}'
