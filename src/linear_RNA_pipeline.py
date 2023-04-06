@@ -339,7 +339,7 @@ shutil.move(tin_xls_current, tin_xls_new_loc)
 ## 9. Clean up
 #  Remove raw data #TODO maybe only do this when delete flag is turned on -- might be misleading 
 for input_R1 in args.raw_input:
-    run_fastqc(input_R1)
+    os.remove(input_R1)
 
 if args.input_read_2 is not None:
     for input_R2 in args.input_read_2:
