@@ -225,7 +225,11 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
         os.remove(indexed_bam)
         os.remove(indexed_md_bam)
         unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
-        os.remove(unmapped_bam)
+        # to catch exception if bam donsn't exist -- b/c gave fastqs directly to STAR
+        try:
+            os.remove(unmapped_bam)
+        except OSError: 
+            pass
         # remove the input to merge if it exists 
         if input_2 is not None:
             os.remove(merged_ubam)
