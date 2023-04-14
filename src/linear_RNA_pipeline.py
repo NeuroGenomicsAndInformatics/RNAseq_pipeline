@@ -144,7 +144,7 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
         # 03-AnalysisReady/01-Brain/02-TIN/${SAMPLEID} - tin summary
         tin_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '02-TIN', cohort_name, sample_id)
         create_out_dir(tin_analysis_dir)
-        # 03-AnalysisReady/01-Brain/04-MultiQC/${POOLID}-- multiquc
+        # 03-AnalysisReady/01-Brain/04-MultiQC/${POOLID}-- multiqc
         multiqc_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '04-MultiQC', cohort_name)
         create_out_dir(multiqc_dir)
         output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir, "quant": quant_dir, "tin_summary": tin_analysis_dir, "multiqc": multiqc_dir}
