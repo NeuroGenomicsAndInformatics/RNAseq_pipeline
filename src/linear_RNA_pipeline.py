@@ -7,11 +7,11 @@ import re
 
 sys.path.append("/src")
 from fastq_to_ubam import *
-from run_STAR_js import align_STAR_normal, cram_samtools, index_samtools, sort_samtools, cram_samtools 
+from run_STAR_js import align_STAR_normal, align_STAR_fastq, cram_samtools, index_samtools, sort_samtools, cram_samtools 
 from run_Picard_QC import picard_collect_RNA_metrics, picard_collect_alignment_metrics, picard_mark_dups
 from run_Salmon import salmon_quant
 from run_tin import calc_tin
-from run_fastqc import fastqc_fastq_PE, fastqc_SE
+from run_fastqc import run_fastqc
 ################################################################################
 # Setup 
 ################################################################################
@@ -21,8 +21,8 @@ from run_fastqc import fastqc_fastq_PE, fastqc_SE
 # Argparse to get all the input
 parser = argparse.ArgumentParser(description='Run linear RNAseq pipeline')
 # to do maybe make this one argument that sometimes needs two values
-parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', required = True)
-parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data')
+parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', nargs = '+', required= True)
+parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data', nargs = '*')
 parser.add_argument('--sample', help = 'Sample name', required = True)
 # TODO maybe add a crammed option? 
 parser.add_argument('--file_type', help = 'Input file type for -r1 and -r2', choices = ["ubam", "fastq", "bam"], required = True) 
@@ -144,7 +144,7 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
         # 03-AnalysisReady/01-Brain/02-TIN/${SAMPLEID} - tin summary
         tin_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '02-TIN', cohort_name, sample_id)
         create_out_dir(tin_analysis_dir)
-        # 03-AnalysisReady/01-Brain/04-MultiQC/${POOLID}-- multiquc
+        # 03-AnalysisReady/01-Brain/04-MultiQC/${POOLID}-- multiqc
         multiqc_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '04-MultiQC', cohort_name)
         create_out_dir(multiqc_dir)
         output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir, "quant": quant_dir, "tin_summary": tin_analysis_dir, "multiqc": multiqc_dir}
@@ -156,15 +156,16 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
 def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input_read_2, tmp_dir, rg_name  = 'A'):
     ubam_out = os.path.join(out_dir, f"{sample_name}_unmapped.bam")
     if file_type == 'fastq': 
-        print('Converting fastq to ubam')
-        if read_type == 'PE':
-            print('Using ' + raw_input + ' and ' + input_read_2 +' as input for ummaped bam')
-            fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name, rg_name)
-            star_input = ubam_out
-        else: 
-            print('Converting single fq to unmapped bam')
-            fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
-        star_input = ubam_out
+        print('Not converting to ubam, just using fastqs for STAR')
+        #print('Converting fastq to ubam')
+        #if read_type == 'PE':
+        #    print('Using ' + raw_input + ' and ' + input_read_2 +' as input for ummaped bam')
+        #    fastq_to_ubam_PE(raw_input, input_read_2, ubam_out, sample_name, rg_name)
+        #    star_input = ubam_out
+        #else: 
+        #    print('Converting single fq to unmapped bam')
+        #    fastq_to_ubam_SE(raw_input, ubam_out, sample_name, rg_name)
+        star_input = (raw_input, input_read_2)
 
     elif args.file_type == 'bam':  
         bam_to_ubam(raw_input, ubam_out, tmp_dir, by_readgroup = 'false'),
@@ -174,17 +175,19 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
         star_input = raw_input
     return star_input
 
-def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, tmp_dir):
+
+def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, file_type):
     out_prefix = os.path.join(out_dir, f'{sample_name}.')
-   # if read_type == 'bam':
-   #     print('Aligning ubams with star')
-    # TODO Align with star (Sort & index with samtools) -- for reverted bams since the code here is slighlty different 
-   # else:   
-    print('Aligning ubam with STAR')
-    STAR_file_input = "SAM "+ read_type
-    align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index, tmp_dir)
+
     aligned_bam_out =  f"{out_prefix}Aligned.out.bam"
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
+    if(file_type == 'fastq'):
+        print('Aligning fastqs with STAR')
+        align_STAR_fastq(star_input[0], star_input[1], out_prefix, STAR_index)
+    else:  
+        print('Aligning ubam with STAR')
+        STAR_file_input = "SAM "+ read_type
+        align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index)
     return (aligned_bam_out, aligned_transcript_bam)
 
 def sort(out_dir, sample_name, aligned_bam_in):
@@ -200,11 +203,21 @@ def index(sorted_bam_out):
     indexed_bam_out = f"{sorted_bam_out}.bai"
     return indexed_bam_out
 
-def fastqc(out_dir, sample_name, input_file_type, input_read_type, raw_input, raw_input2):
-    if input_file_type == 'fastq' and input_read_type == 'PE': 
-        fastqc_fastq_PE(raw_input, raw_input2, sample_name, out_dir)
+def fastqc(out_dir, input_file_type, input_read_type, raw_input, raw_input2):
+    if input_file_type == 'fastq':
+        if input_read_type == 'PE' : 
+            #loop through fq each and run fastqc for them
+            for input_R1 in raw_input:
+                run_fastqc(input_R1, out_dir)
+            for input_R2 in raw_input2:
+                run_fastqc(input_R2, out_dir)
+        else:  
+            # loop through fq each and run fastqc for them
+            for input_R1 in raw_input: 
+                run_fastqc(input_R1, out_dir)
     else: 
-        fastqc_SE(raw_input, sample_name, out_dir)
+        run_fastqc(raw_input, out_dir)
+
 
 def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam, merged_ubam, input_2, transcriptome_bam, md_bam):
     if delete is not None: 
@@ -236,7 +249,11 @@ def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STA
         if 'ubam' in args.delete: 
             print('Deleting unmapped bam file')
             unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
-            os.remove(unmapped_bam)
+            # to catch exception if bam donsn't exist -- b/c gave fastqs directly to STAR
+            try:
+                os.remove(unmapped_bam)
+            except OSError: 
+                pass
             linear_logs.info(f'Deleting file: {unmapped_bam}')
         # remove the input to merge if it exists 
         if input_2 is not None:
@@ -310,7 +327,7 @@ print(f'''tmp location: {tmp_dir_path}''')
 
 # 1. Run fastqc (if we don't need to merge files first)
 if args.input_to_merge is None: 
-    fastqc(out_dirs["fastqc"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2) 
+    fastqc(out_dirs["fastqc"], args.file_type, args.read_type, args.raw_input, args.input_read_2) 
 
 # 2. convert to Ubam (from fastq or aligned bam)
 ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, tmp_dir_path)
@@ -323,7 +340,9 @@ if args.input_to_merge is not None:
     fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], tmp_dir_path)
+
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.file_type, tmp_dir_path)
+
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
@@ -364,6 +383,7 @@ cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_
 # delete the intermediate files we don't normally keep -- as requested by user with --delete argument
 delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], \
     indexed_md_bam_out, merged_ubam_out, args.input_to_merge, aligned_transcript_bam_out, mark_dups_bam_out)
+
 
 
 
