@@ -33,8 +33,11 @@ parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain',
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--out_dir', help = 'directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
-parser.add_argument( '-d', '--delete', action ='store_true',  help = 'Include to delete the following files: _input1_input2_cat.bam, _input1_unaligned.bam, _input2_unaligned.bam' )
-
+parser.add_argument( '-d', '--delete',\
+    nargs = '*',\
+    choices = ["input", "ubam"],\
+    help = 'Include to delete one or more following files: input files,\
+          and _unmapped.bam, respectively')
 args = parser.parse_args()
 
 
@@ -114,34 +117,36 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
 def align_STAR_chimeric(input_1, input_2, bam_out_dir, sample_name, file_type, read_type, star_genome, tmp):
      if file_type == 'fastq': 
           if read_type == 'PE':
-               star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, star_genome)
+               star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, star_genome, tmp)
           else: 
-               star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome)
+               star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, star_genome, tmp)
      elif file_type == "bam":
           if read_type == 'PE':
                # star_chimeric_bam_PE
                #revert_bam(input_1, bam_out_dir) #TODO remove this?
-               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome, tmp)
           else:
                #get ubam
                ubam_out = os.path.join(bam_out_dir, f"{sample_name}_unmapped.bam")
                bam_to_ubam(input_1, ubam_out, tmp , by_readgroup = 'false')
                # align with star
-               star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_SE(ubam_out, bam_out_dir, sample_name, star_genome, tmp)
      else: 
           if read_type == 'PE':
                #TODO star_chimeric_bam_PE
-               star_chimeric_bam_PE(input_1, bam_out_dir)
+               star_chimeric_bam_PE(input_1, bam_out_dir, sample_name, star_genome, tmp)
           else:
                #TODO test star_chimeric_bam_SE
-               star_chimeric_bam_SE(input_1, bam_out_dir, sample_name, star_genome)
+               star_chimeric_bam_SE(input_1, bam_out_dir, sample_name, star_genome, tmp)
 
-def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, thread_N = 12):
+def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_dir, tmp_dir, thread_N = 12):
      # run for both mates toghter
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_Unified.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_both_mates = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1} {input_2}'
           f' --readFilesCommand zcat' # not sure if this works if they aren't zipped
@@ -165,9 +170,11 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      subprocess.check_call(cmd_to_call_both)
 
      output_prefix_R1 = os.path.join(bam_out_dir, f'{sample_name}_R1.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_mate1 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype None'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -192,9 +199,11 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      subprocess.check_call(cmd_to_call_mate1)
 
      output_prefix_R2 = os.path.join(bam_out_dir, f'{sample_name}_R2.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd_mate2 = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype None'
           f' --readFilesIn {input_2}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -218,11 +227,13 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
      cmd_to_call_mate2 = cmd_mate2.split()
      subprocess.check_call(cmd_to_call_mate2)
 
-def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir, thread_N = 12):
+def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir,tmp_dir, thread_N = 12):
      output_prefix = os.path.join(bam_out_dir, f'{sample_name}_R1.')
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
@@ -287,7 +298,7 @@ def bam_to_fastq_PE(input_readname_bam, out_dir, sample_name):
      subprocess.check_call(cmd_to_call)
      return(fq1, fq2)
 
-def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir):
+def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir, tmp):
      
      print('Testing ubam reversion')
 
@@ -298,15 +309,17 @@ def star_chimeric_bam_PE(input_ubam, out_dir, sample_name, genome_dir):
      fq1, fq2 = bam_to_fastq_PE(readname_bam, out_dir, sample_name)
 
      #then just run STAR PE fastq 
-     star_chimeric_fastq_PE(fq1, fq2, sample_name, out_dir, genome_dir)
+     star_chimeric_fastq_PE(fq1, fq2, sample_name, out_dir, genome_dir, tmp)
 
-def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, \
+def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, tmp_dir, \
      read_cmd = 'samtools view -h', thread_N = 12):
      output_prefix = os.path.join(out_dir, f'{sample_name}.')
      STAR_file_input = "SAM SE"
+     star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
      cmd = (
           f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runThreadN {thread_N}'
           f' --genomeDir {genome_dir}'
+          f' --outTmpDir {star_tmp}'
           f' --outSAMtype BAM SortedByCoordinate'
           f' --readFilesIn {input_ubam}'
           f' --readFilesType {STAR_file_input}'
@@ -362,26 +375,44 @@ def merge_files(out_dir, sample_name, input1_to_merge, input_1_file_type, input2
           return input1_to_merge, input_1_file_type
 
 def delete_extras(delete, sample_name, merged_ubam, STAR_dir, input2_merge):
-    if delete is True and input2_merge is not None: 
-        print("Deleting extra files")
-        os.remove(input2_merge)
-        os.remove(merged_ubam)
-        unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
-        os.remove(unmapped_bam1)
-        unmapped_bam2 = os.path.join(STAR_dir, f"{sample_name}_input2_unaligned.bam")
-        os.remove(unmapped_bam2)
-        circ_logs.info(f'Deleting files: {merged_ubam}, {unmapped_bam1}, and {unmapped_bam2}')
+     if delete is not None: 
+          print("Deleting files specified with --delete option")
+          if 'input' in args.delete: 
+               print('Deleting input file(s)')
+               os.remove(args.raw_input)
+               circ_logs.info(f'Deleting file: {args.raw_input}')
+               if args.input_read_2 is not None:
+                    os.remove(args.input_read_2)
+                    circ_logs.info(f'Deleting file: {args.input_read_2}')
+               if input2_merge is not None: 
+                    os.remove(input2_merge)
+                    circ_logs.info(f'Deleting file: {input2_merge}')
+          if 'ubam' in args.delete and input2_merge is not None:
+                    # These files are all only made if merging bams 
+                    print('Deleting ubam file(s)')
+                    os.remove(merged_ubam)
+                    unmapped_bam1 = os.path.join(STAR_dir, f"{sample_name}_input1_unaligned.bam")
+                    os.remove(unmapped_bam1)
+                    unmapped_bam2 = os.path.join(STAR_dir, f"{sample_name}_input2_unaligned.bam")
+                    os.remove(unmapped_bam2)
+                    circ_logs.info(f'Deleting files: {merged_ubam}, {unmapped_bam1}, and {unmapped_bam2}')
 
 
 
 # create folders : 
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 
+# set up tmp dir -- include JOB ID in path to prevent conflicts
+tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
+create_out_dir(tmp_dir_path)
+print(f'''tmp location: {tmp_dir_path}''')
+
+
 # merge files needed 
-merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.file_type,  args.input_to_merge, args.merge_file_type, args.input_read_2, args.tmp_dir, args.read_type)
+merged_ubam_out, merged_file_type = merge_files(out_dirs["circ_bams"], args.sample, args.raw_input, args.file_type,  args.input_to_merge, args.merge_file_type, args.input_read_2, tmp_dir_path, args.read_type)
 
 # Align chimerically with star (Sort & index with samtools & convert to Ubam if needed)
-align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, args.tmp_dir)
+align_STAR_chimeric(merged_ubam_out, args.input_read_2, out_dirs['circ_bams'], args.sample, merged_file_type, args.read_type, args.STAR_index, tmp_dir_path)
 
 # currently sorting with star -- but might take up less memory to sort with samtools 
 # index bam with samtools 
@@ -390,6 +421,5 @@ index(args.sample, out_dirs['circ_bams'])
 # delete extra files if delete option is true 
 delete_extras(args.delete, args.sample, merged_ubam_out, out_dirs['circ_bams'], args.input_to_merge)
 
-# TODO Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) -- should this be done here? 
 
 

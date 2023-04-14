@@ -5,7 +5,7 @@ import os
 
 logger = logging.getLogger('linear_RNA_pipeline')
 
-def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, n_thrd = '12', two_pass_mode = 'Basic', \
+def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, tmp_dir, n_thrd = '12', two_pass_mode = 'Basic', \
     mismatch_max = '999',  multimap_max =  '20', \
     SJ_overhang_min = '8', SJDB_overhang_min = '1', \
     mismatch_n_over_l_max = '0.1', align_intron_min = '20', \
@@ -24,11 +24,13 @@ def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, n_th
 
     logger.info('Starting STAR alingment')
     input_exists = os.path.exists(input)
-    if (input_exists ):
+    if (input_exists):
+        star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
         #TODO note: file_read_type needs to be either SAM SE or SAM PE I think
         cmd = (f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runMode alignReads'
             f' --runThreadN {n_thrd}'
             f' --genomeDir {genome_dir}'
+            f' --outTmpDir {star_tmp}'
             f' --twopassMode {two_pass_mode}'
             f' --outFilterMismatchNmax {mismatch_max}'
             f' --outFilterMultimapNmax {multimap_max}'

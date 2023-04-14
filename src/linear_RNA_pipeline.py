@@ -24,13 +24,13 @@ parser = argparse.ArgumentParser(description='Run linear RNAseq pipeline')
 parser.add_argument('-r1', '--raw_input', help='Path to raw data (Read 1 for PE data)', nargs = '+', required= True)
 parser.add_argument('-r2', '--input_read_2', help = 'Path to raw data read 2 file for PE data', nargs = '*')
 parser.add_argument('--sample', help = 'Sample name', required = True)
-# TODO double check that the three options here makes sense -- maybe add a crammed option? 
+# TODO maybe add a crammed option? 
 parser.add_argument('--file_type', help = 'Input file type for -r1 and -r2', choices = ["ubam", "fastq", "bam"], required = True) 
 parser.add_argument('--tmp_dir', help ='Path to directory for temporary files', required = True)
 parser.add_argument('--read_type', help = 'Paired end or Single end reads', choices = ['PE', 'SE'], required = True)
 parser.add_argument('--stranded', help = 'Include for strand specific libraries', default = "NONE", choices = ["NONE", "FIRST_READ_TRANSCRIPTION_STRAND", "SECOND_READ_TRANSCRIPTION_STRAND"])
 parser.add_argument('--cohort', help = 'Full RNAseq cohort name', required = True )
-parser.add_argument('--tissue', help = 'Sample tissue type', choices = ['brain', 'blood_pax', 'ipsc', 'plasma', 'csf'])
+parser.add_argument('--tissue', help = 'Sample tissue type for hydra dir path', choices = ['brain', 'blood_pax', 'ipsc', 'plasma', 'csf'])
 parser.add_argument('--STAR_index', help = "Path to the directory with the STAR genome index refernce", required = True)
 parser.add_argument('--ref_flat', help = "Path to reference annotation in flat format", required = True)
 parser.add_argument('--annotation', help = "Path to annotaiton file for Salmon", required = True)
@@ -40,7 +40,11 @@ parser.add_argument('--transcripts', help = "Path to Salmon transcripts index", 
 parser.add_argument('--adapter_seq', default = 'null', help ="Adapter sequence for picard")
 parser.add_argument('--out_dir', help = 'Directory for output', required = True)
 parser.add_argument('--out_struct', help = "Directory structure of output", default = 'none', choices = ['none', 'hydra'])
-parser.add_argument( '-d', '--delete', action ='store_true',  help = 'Include to delete the following files: .Aligned.out.bam, Aligned.sortedByCoord.out.bam, Aligned.sortedByCoord.out.bam.bai, ._STARgenome, ._STARpass1, _unmapped.bam and Aligned.sortedByCoord.out.md.bam.bai')
+parser.add_argument( '-d', '--delete',\
+    nargs = '*',\
+    choices = ["input", "aligned_bam", "aligned_sorted_bam", "bais", "STAR_extras", "ubam", "aligned_transcriptome_bam", "md_bam"],\
+    help = 'Include to delete one or more following files: input files, .Aligned.out.bam, Aligned.sortedByCoord.out.bam, all .bai files,\
+         ._STARgenome and ._STARpass1, _unmapped.bam, .Aligned.toTranscriptome.out.bam, and .Aligned.sortedByCoord.out.md.bam respectively')
 parser.add_argument('-c', '--cram', action = 'store_true', help = 'Cram the following bams: Aligned.sortedByCoord.out.md.bam')
 parser.add_argument('--ref', help = 'Path to reference genome fasta (for cramming)', required= True) # TODO change this to be required only when cramming
 parser.add_argument('--input_to_merge', help = 'Path to secondary input file to concatenate with primary input (ie MSBB which is separated into aligned and unaligend reads)')
@@ -60,10 +64,6 @@ if args.out_struct == 'hydra' and args.tissue is None:
 if args.raw_input == args.input_read_2: 
     parser.error('--input_read_2 and --raw_input cannot be the same file. Please check input.')
 
-# TODO step to move from our server to storage1 (perhaps make this flexible?)
-
-
-# TODO step to move from storage1 to scratch? 
 
 
 # set up logs
@@ -175,8 +175,10 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
         star_input = raw_input
     return star_input
 
+
 def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, file_type):
     out_prefix = os.path.join(out_dir, f'{sample_name}.')
+
     aligned_bam_out =  f"{out_prefix}Aligned.out.bam"
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
     if(file_type == 'fastq'):
@@ -216,30 +218,59 @@ def fastqc(out_dir, input_file_type, input_read_type, raw_input, raw_input2):
     else: 
         run_fastqc(raw_input, out_dir)
 
-def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam, merged_ubam, input_2):
-    # TODO change this -- but there will be merged changes here so wait for now
-    if delete is True: 
-        print("Deleting extra files")
-        os.remove(aligned_bam)
-        os.remove(sorted_bam)
-        os.remove(indexed_bam)
-        os.remove(indexed_md_bam)
-        unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
-        # to catch exception if bam donsn't exist -- b/c gave fastqs directly to STAR
-        try:
-            os.remove(unmapped_bam)
-        except OSError: 
-            pass
+
+def delete_extras(delete, sample_name, aligned_bam, sorted_bam, indexed_bam, STAR_dir, indexed_md_bam, merged_ubam, input_2, transcriptome_bam, md_bam):
+    if delete is not None: 
+        print("Deleting files specified with --delete option")
+        if 'input' in args.delete: 
+            print('Deleting input file(s)')
+            os.remove(args.raw_input)
+            linear_logs.info(f'Deleting file: {args.raw_input}')
+            if args.input_read_2 is not None:
+                os.remove(args.input_read_2)
+                linear_logs.info(f'Deleting file: {input_2}')
+        if 'aligned_bam' in args.delete: 
+            print('Deleting aligned bam')
+            os.remove(aligned_bam)
+            linear_logs.info(f'Deleting file: {aligned_bam}')
+        if 'md_bam' in args.delete and args.cram is not True: # added cram qualification -- if cramming is turned on then this file won't exist
+            print('Deleting md bam')
+            os.remove(md_bam)
+            linear_logs.info(f'Deleting file: {md_bam}')
+        if 'aligned_sorted_bam' in args.delete: 
+            print('Deleting STAR aligned & sorted bam')
+            os.remove(sorted_bam)
+            linear_logs.info(f'Deleting file: {sorted_bam}')
+        if 'bais' in args.delete:
+            print('Deleting bai files')
+            os.remove(indexed_bam)
+            os.remove(indexed_md_bam)
+            linear_logs.info(f'Deleting file: {indexed_bam} and {indexed_md_bam}')
+        if 'ubam' in args.delete: 
+            print('Deleting unmapped bam file')
+            unmapped_bam = os.path.join(STAR_dir, f"{sample_name}_unmapped.bam")
+            # to catch exception if bam donsn't exist -- b/c gave fastqs directly to STAR
+            try:
+                os.remove(unmapped_bam)
+            except OSError: 
+                pass
+            linear_logs.info(f'Deleting file: {unmapped_bam}')
         # remove the input to merge if it exists 
         if input_2 is not None:
             os.remove(merged_ubam)
             unmapped_bam_input2 = os.path.join(STAR_dir, f"{sample_name}_input2_unmapped.bam")
             os.remove(unmapped_bam_input2)
-        STAR_pass1 = os.path.join(STAR_dir, f"{sample_name}._STARpass1")
-        STAR_genome = os.path.join(STAR_dir,f"{sample_name}._STARgenome" )
-        shutil.rmtree(STAR_pass1)
-        shutil.rmtree(STAR_genome)
-        linear_logs.info(f'Deleting files: {aligned_bam}, {sorted_bam}, {indexed_bam}, {indexed_md_bam}, {unmapped_bam}, {STAR_pass1}, and {STAR_genome}')
+        if 'STAR_extras' in args.delete:
+            print('Deleting ._STARgenome and ._STARpass1')
+            STAR_pass1 = os.path.join(STAR_dir, f"{sample_name}._STARpass1")
+            STAR_genome = os.path.join(STAR_dir,f"{sample_name}._STARgenome" )
+            shutil.rmtree(STAR_pass1)
+            shutil.rmtree(STAR_genome)
+            linear_logs.info(f'Deleting files:  {STAR_pass1} and {STAR_genome}')
+        if 'aligned_transcriptome_bam' in args.delete: 
+            print('Deleting STAR aligned to transcriptome bam file')
+            os.remove(transcriptome_bam) 
+            linear_logs.info(f'Deleting file: {transcriptome_bam}')
 
 def cram_bams(cram, mark_dups_bam, ref, sample_name, out_dir ):
     if cram is True: 
@@ -289,22 +320,29 @@ out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.ti
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
 salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
 
+# 0.3 set up tmp dir -- include JOB ID in path to prevent conflicts
+tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
+create_out_dir(tmp_dir_path)
+print(f'''tmp location: {tmp_dir_path}''')
+
 # 1. Run fastqc (if we don't need to merge files first)
 if args.input_to_merge is None: 
     fastqc(out_dirs["fastqc"], args.file_type, args.read_type, args.raw_input, args.input_read_2) 
 
 # 2. convert to Ubam (from fastq or aligned bam)
-ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, args.tmp_dir)
+ubam_out = convert_to_ubam(out_dirs["linear_tin"], args.sample, args.file_type, args.read_type, args.raw_input, args.input_read_2, tmp_dir_path)
 
 # 2.1 concatenate if needed 
-merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, args.input_to_merge, args.merge_file_type, args.read_type, args.input_read_2, args.tmp_dir)
+merged_ubam_out = merge_files(out_dirs["linear_tin"], args.sample, ubam_out, args.input_to_merge, args.merge_file_type, args.read_type, args.input_read_2, tmp_dir_path)
 
 # 2.1.2 run fastqc on concatenated bams 
 if args.input_to_merge is not None: 
     fastqc(out_dirs["fastqc"], args.sample, "ubam", args.read_type, merged_ubam_out, args.input_read_2)
 
 # 3. Align with STAR
-aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.file_type)
+
+aligned_bam_out, aligned_transcript_bam_out = align_with_star(merged_ubam_out, args.sample, args.read_type, args.STAR_index, out_dirs["linear_tin"], args.file_type, tmp_dir_path)
+
 
 # 4. samtools sort
 sorted_bam_out = sort(out_dirs["linear_tin"], args.sample, aligned_bam_out)
@@ -314,12 +352,12 @@ indexed_bam_out = index(sorted_bam_out)
 
 # 6. Post Alignment Picard QC ( Collect RNAseq metrics, Collect Alignemt summary metrics, Mark dups) 
 RNAseq_metrics_out = os.path.join(out_dirs["fastqc"], f"{args.sample}.RNA_Metrics.txt")
-picard_collect_RNA_metrics(sorted_bam_out, RNAseq_metrics_out, args.ref_flat, args.rib_int, args.tmp_dir, args.stranded)
+picard_collect_RNA_metrics(sorted_bam_out, RNAseq_metrics_out, args.ref_flat, args.rib_int, tmp_dir_path, args.stranded)
 Alignment_metrics_out = os.path.join(out_dirs["fastqc"], f"{args.sample}.Summary_metrics.txt")
-picard_collect_alignment_metrics(sorted_bam_out, Alignment_metrics_out, args.tmp_dir, args.adapter_seq)
+picard_collect_alignment_metrics(sorted_bam_out, Alignment_metrics_out, tmp_dir_path, args.adapter_seq)
 mark_dups_bam_out = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.sortedByCoord.out.md.bam")
 mark_dups_txt_out = os.path.join(out_dirs["fastqc"],f"{args.sample}.marked_dup_metrics.txt")
-picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, args.tmp_dir )
+picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, tmp_dir_path )
 
 # 7. quantify with salmon 
 salmon_out = os.path.join(out_dirs["quant"],f'{args.sample}.salmon')
@@ -338,51 +376,14 @@ tin_xls_new_loc = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.s
 shutil.move(tin_summary_current, tin_summary_new_loc)
 shutil.move(tin_xls_current, tin_xls_new_loc)
 
-# TODO run mulitqc -- this is normally run on all the samples together, so perhaps not?? -- maybe have last all complete function? 
-
-## 9. Clean up
-#  Remove raw data #TODO maybe only do this when delete flag is turned on -- might be misleading 
-for input_R1 in args.raw_input:
-    os.remove(input_R1)
-
-if args.input_read_2 is not None:
-    for input_R2 in args.input_read_2:
-        os.remove(input_R2)
-
-# delete the intermediate files we don't normally keep
-delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], indexed_md_bam_out, merged_ubam_out, args.input_to_merge)
-
 # cram bams 
 cram_bams(args.cram, mark_dups_bam_out, args.ref, args.sample, out_dirs["linear_tin"])
 
-# TODO clean this up: copy everthing back to storage1
-# TODO change this from hard coding to accepting an argument for storage locaion
-# TODO look into using glob here otherwise make this it's own fuction
-#storage1_path = os.path.join('/storage1/fs1/cruchagac/Active/jksanford/', args.cohort , '02.-ProcessedData')
-#storage1_qc = os.path.join(storage1_path, '01.-QC')
-#storage1_bams = os.path.join(storage1_path, '02.-bams')
-#storage1_star = os.path.join(storage1_path, '03.-STAR/Hg38' )
-#storage1_salmon = os.path.join(storage1_path, '04.-Salmon/Hg38')
-#storage1_tin = os.path.join(storage1_path, '05.-PostAlign/TIN')
-#storage1_circ = os.path.join(storage1_path, '06.-circRNA/Hg38')
-# everything (with matching sample ID) in 01-QC
-#shutil.move(os.path.join(args.storage_qc,args.sample_id+'.marked_dup_metrics.txt'), os.path.join(storage1_qc,args.sample_id+'.marked_dup_metrics.txt'))
-#shutil.move(os.path.join(args.storage_qc,args.sample_id+'.RNA_Metrics.txt'), os.path.join(storage1_qc,args.sample_id+'.RNA_Metrics.txt'))
-#shutil.move(os.path.join(args.storage_qc,args.sample_id+'.Summary_Metrics.txt'), os.path.join(storage1_qc,args.sample_id+'.Summary_Metrics.txt'))
+## 9. Clean up
+# delete the intermediate files we don't normally keep -- as requested by user with --delete argument
+delete_extras(args.delete, args.sample, aligned_bam_out, sorted_bam_out, indexed_bam_out, out_dirs["linear_tin"], \
+    indexed_md_bam_out, merged_ubam_out, args.input_to_merge, aligned_transcript_bam_out, mark_dups_bam_out)
 
-# everything in 02-bams 
-#shutil.move(os.path.join(args.storage_bams,args.sample_id+'.Aligned.sortedByCoord.out.md.bam'), os.path.join(storage1_bams,args.sample_id+'.Aligned.sortedByCoord.out.md.bam'))
-#shutil.move(os.path.join(args.storage_bams,args.sample_id+'.Aligned.sortedByCoord.out.md.bam.bai'), os.path.join(storage1_bams,args.sample_id+'.Aligned.sortedByCoord.out.md.bam.bai'))
 
-# everything in 03.-STAR
-#shutil.move(os.path.join(args.storage_aligned,args.sample_id), os.path.join(storage1_star,args.sample_id))
 
-# everything in 04.-Salmon 
-#shutil.move(os.path.join(args.storage_quant,args.sample_id), os.path.join(storage1_salmon,args.sample_id))
 
-# everything in 05.-PostAlign
-#shutil.move(os.path.join(args.storage_tin,args.sample_id+'.Aligned.sortedByCoord.out.md.tin.xls'), os.path.join(storage1_tin,args.sample_id+'.Aligned.sortedByCoord.out.md.tin.xls'))
-#shutil.move(os.path.join(args.storage_tin,args.sample_id+'.Aligned.sortedByCoord.out.md.summary.txt'), os.path.join(storage1_tin,args.sample_id+'.Aligned.sortedByCoord.out.md.summary.txt'))
-
-# everything in  06.-circRNA/Hg38
-#shutil.move(os.path.join(args.storage_circ,args.sample_id), os.path.join(storage1_circ,args.sample_id))
