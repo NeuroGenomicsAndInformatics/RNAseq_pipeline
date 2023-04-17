@@ -176,18 +176,18 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
     return star_input
 
 
-def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, file_type):
+def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, file_type, tmp_dir):
     out_prefix = os.path.join(out_dir, f'{sample_name}.')
 
     aligned_bam_out =  f"{out_prefix}Aligned.out.bam"
     aligned_transcript_bam = f"{out_prefix}Aligned.toTranscriptome.out.bam"
     if(file_type == 'fastq'):
         print('Aligning fastqs with STAR')
-        align_STAR_fastq(star_input[0], star_input[1], out_prefix, STAR_index)
+        align_STAR_fastq(star_input[0], star_input[1], out_prefix, STAR_index, tmp_dir)
     else:  
         print('Aligning ubam with STAR')
         STAR_file_input = "SAM "+ read_type
-        align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index)
+        align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index, tmp_dir)
     return (aligned_bam_out, aligned_transcript_bam)
 
 def sort(out_dir, sample_name, aligned_bam_in):

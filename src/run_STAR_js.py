@@ -72,7 +72,7 @@ def align_STAR_normal(input, file_out_prefix,  file_read_type,  genome_dir, tmp_
         #TODO add in
         #quit()
 
-def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
+def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir, tmp_dir, \
     file_read_cmd = 'zcat', n_thrd = '12', two_pass_mode = 'Basic', \
     mismatch_max = '999',  multimap_max =  '20', \
     SJ_overhang_min = '8', SJDB_overhang_min = '1', \
@@ -98,9 +98,11 @@ def align_STAR_fastq(input_read1, input_read2, file_out_prefix, genome_dir,  \
     for R2_fastq in input_read2:
         input2_exists.append(os.path.exists(R2_fastq))
     if (all(input1_exists) and all(input2_exists)):
+        star_tmp = os.path.join(tmp_dir, 'STAR_tmp')
         cmd = (f'/opt/STAR-2.7.8a/bin/Linux_x86_64/STAR --runMode alignReads'
             f' --runThreadN {n_thrd}'
             f' --genomeDir {genome_dir}'
+            f' --outTmpDir {star_tmp}'
             f' --twopassMode {two_pass_mode}'
             f' --outFilterMismatchNmax {mismatch_max}'
             f' --outFilterMultimapNmax {multimap_max}'
