@@ -133,21 +133,19 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
         linear_logs.info(f'Setting up output structure to comply with Hydras dir structure and placing in {out_dir}')
         #If outstructure = hydra create paths for :
         # 02-Processed/01-Brain/01-FastQC/${SAMPLEID} -- fastqc.htlm, fastqc.zip, picard qc
-        fastqc_out_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, '01-FastQC', cohort_name, sample_id)
+        fastqc_out_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, cohort_name, '01-FastQC', sample_id)
         create_out_dir(fastqc_out_dir)
         # 02-Processed/01-Brain/02-Linear_TIN/${SAMPLEID} -- .bam, .bai, .tin.csv
-        linear_tin_processed_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, '02-Linear_TIN', cohort_name, sample_id)
+        linear_tin_processed_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, cohort_name, '02-Linear_TIN', sample_id)
         create_out_dir(linear_tin_processed_dir)
         # 03-AnalysisReady/01-Brain/01-Linear/${SAMPLEID} -- quant
-        quant_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '01-Linear', cohort_name, sample_id)
+        quant_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, cohort_name, '01-Linear', sample_id)
         create_out_dir(quant_dir)
         # 03-AnalysisReady/01-Brain/02-TIN/${SAMPLEID} - tin summary
-        tin_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '02-TIN', cohort_name, sample_id)
+        tin_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, cohort_name, '02-TIN', sample_id)
         create_out_dir(tin_analysis_dir)
-        # 03-AnalysisReady/01-Brain/04-MultiQC/${POOLID}-- multiquc
-        multiqc_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, '04-MultiQC', cohort_name)
-        create_out_dir(multiqc_dir)
-        output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir, "quant": quant_dir, "tin_summary": tin_analysis_dir, "multiqc": multiqc_dir}
+
+        output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir, "quant": quant_dir, "tin_summary": tin_analysis_dir}
     else: 
         print(f'Placing all output in dir: {out_dir}')
         output_dirs = {"fastqc": out_dir, "linear_tin": out_dir, "quant": out_dir, "tin_summary": out_dir, "multiqc":out_dir }
