@@ -299,7 +299,7 @@ check_refs_exist(args.STAR_index, args.ref_flat, args.annotation, args.annote_be
 # 0.2 Set up output paths -- have an option to have this automatically structure like hydra
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
-salmon quant: {out_dirs["quant"]} \n multiqc: {out_dirs["multiqc"]} \n tin_summary: {out_dirs["tin_summary"]}''')
+salmon quant: {out_dirs["quant"]} \n tin_summary: {out_dirs["tin_summary"]}''')
 
 # 0.3 set up tmp dir -- include JOB ID in path to prevent conflicts
 tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
