@@ -138,17 +138,11 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
         # 02-Processed/01-Brain/02-Linear_TIN/${SAMPLEID} -- .bam, .bai, .tin.csv
         linear_tin_processed_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, cohort_name, '02-Linear_TIN', sample_id)
         create_out_dir(linear_tin_processed_dir)
-        # 03-AnalysisReady/01-Brain/01-Linear/${SAMPLEID} -- quant
-        quant_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, cohort_name, '01-Linear', sample_id)
-        create_out_dir(quant_dir)
-        # 03-AnalysisReady/01-Brain/02-TIN/${SAMPLEID} - tin summary
-        tin_analysis_dir = os.path.join(out_dir, '03-AnalysisReady/02-GRCh38', tissue_folder, cohort_name, '02-TIN', sample_id)
-        create_out_dir(tin_analysis_dir)
 
-        output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir, "quant": quant_dir, "tin_summary": tin_analysis_dir}
+        output_dirs = {"fastqc": fastqc_out_dir, "linear_tin": linear_tin_processed_dir}
     else: 
         print(f'Placing all output in dir: {out_dir}')
-        output_dirs = {"fastqc": out_dir, "linear_tin": out_dir, "quant": out_dir, "tin_summary": out_dir, "multiqc":out_dir }
+        output_dirs = {"fastqc": out_dir, "linear_tin": out_dir }
     return output_dirs
 
 def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input_read_2, tmp_dir, rg_name  = 'A'):
@@ -299,7 +293,7 @@ check_refs_exist(args.STAR_index, args.ref_flat, args.annotation, args.annote_be
 # 0.2 Set up output paths -- have an option to have this automatically structure like hydra
 out_dirs = setup_output_dirs(args.out_struct, args.out_dir, args.cohort, args.tissue, args.sample)
 print(f'''Output locations: \n fastqc: {out_dirs["fastqc"]} \n linear and tin processed: {out_dirs["linear_tin"]} 
-salmon quant: {out_dirs["quant"]} \n tin_summary: {out_dirs["tin_summary"]}''')
+salmon quant: {out_dirs["linear_tin"]} \n tin_summary: {out_dirs["linear_tin"]}''')
 
 # 0.3 set up tmp dir -- include JOB ID in path to prevent conflicts
 tmp_dir_path = os.path.join(args.tmp_dir, os.getenv('LSB_JOBID'))
@@ -339,7 +333,7 @@ mark_dups_txt_out = os.path.join(out_dirs["fastqc"],f"{args.sample}.marked_dup_m
 picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, tmp_dir_path )
 
 # 7. quantify with salmon 
-salmon_out = os.path.join(out_dirs["quant"],f'{args.sample}.salmon')
+salmon_out = os.path.join(out_dirs["linear_tin"],f'{args.sample}.salmon')
 salmon_quant(aligned_transcript_bam_out, salmon_out, args.annotation, args.transcripts)
 
 # 8. TIN
@@ -349,7 +343,7 @@ indexed_md_bam_out = index(mark_dups_bam_out)
 calc_tin(mark_dups_bam_out, args.annote_bed)
 # move summary tin ouput
 tin_summary_current = f"{args.sample}.Aligned.sortedByCoord.out.md.summary.txt"
-tin_summary_new_loc = os.path.join(out_dirs["tin_summary"], f"{args.sample}.Aligned.sortedByCoord.out.md.summary.txt")
+tin_summary_new_loc = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.sortedByCoord.out.md.summary.txt")
 tin_xls_current = f"{args.sample}.Aligned.sortedByCoord.out.md.tin.xls"
 tin_xls_new_loc = os.path.join(out_dirs["linear_tin"], f"{args.sample}.Aligned.sortedByCoord.out.md.tin.xls")
 shutil.move(tin_summary_current, tin_summary_new_loc)
