@@ -132,10 +132,10 @@ def setup_output_dirs(output_struct, out_dir, cohort_name, tissue, sample_id):
             tissue_folder = "05-CSF"
         linear_logs.info(f'Setting up output structure to comply with Hydras dir structure and placing in {out_dir}')
         #If outstructure = hydra create paths for :
-        # 02-Processed/01-Brain/01-FastQC/${SAMPLEID} -- fastqc.htlm, fastqc.zip, picard qc
+        # 02-Processed/<tissue>/<cohort>/01-FastQC/${SAMPLEID} -- fastqc.htlm, fastqc.zip, picard qc
         fastqc_out_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, cohort_name, '01-FastQC', sample_id)
         create_out_dir(fastqc_out_dir)
-        # 02-Processed/01-Brain/02-Linear_TIN/${SAMPLEID} -- .bam, .bai, .tin.csv
+        # 02-Processed/<tissue>/<cohort>/02-Linear_TIN/${SAMPLEID} -- .bam, .bai, .tin.csv, .tin.xls, salmon
         linear_tin_processed_dir = os.path.join(out_dir, '02-Processed/02-GRCh38/', tissue_folder, cohort_name, '02-Linear_TIN', sample_id)
         create_out_dir(linear_tin_processed_dir)
 
