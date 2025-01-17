@@ -167,11 +167,7 @@ def convert_to_ubam(out_dir, sample_name, file_type, read_type, raw_input, input
     return star_input
 
 def align_with_star(star_input, sample_name, read_type, STAR_index, out_dir, tmp_dir):
-    out_prefix = os.path.join(out_dir, f'{sample_name}.')
-   # if read_type == 'bam':
-   #     print('Aligning ubams with star')
-    # TODO Align with star (Sort & index with samtools) -- for reverted bams since the code here is slighlty different 
-   # else:   
+    out_prefix = os.path.join(out_dir, f'{sample_name}.') 
     print('Aligning ubam with STAR')
     STAR_file_input = "SAM "+ read_type
     align_STAR_normal( star_input, out_prefix, STAR_file_input, STAR_index, tmp_dir)
@@ -285,8 +281,6 @@ def merge_files(out_dir, sample_name, input_1_ubam, input_2, input_2_file_type, 
 
 
 
-# TODO decide if we want to log the size of the input file(s)
-
 # 0.1 check all references exist (so that don't have to quit half way thorugh): 
 check_refs_exist(args.STAR_index, args.ref_flat, args.annotation, args.annote_bed, args.rib_int, args.transcripts)
 
@@ -333,7 +327,7 @@ mark_dups_txt_out = os.path.join(out_dirs["fastqc"],f"{args.sample}.marked_dup_m
 picard_mark_dups(sorted_bam_out, mark_dups_bam_out, mark_dups_txt_out, tmp_dir_path )
 
 # 7. quantify with salmon 
-salmon_out = os.path.join(out_dirs["linear_tin"],f'{args.sample}.salmon')
+salmon_out = os.path.join(out_dirs["linear_tin"],f'{args.sample}_salmon')
 salmon_quant(aligned_transcript_bam_out, salmon_out, args.annotation, args.transcripts)
 
 # 8. TIN
