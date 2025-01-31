@@ -8,3 +8,5 @@ test_argparse_multi_arg.py
 testing_argparse.ipynb
 /DCC_old_unedited/
 
+cutadapt.dockerfile
+src/gffread.dockerfile
