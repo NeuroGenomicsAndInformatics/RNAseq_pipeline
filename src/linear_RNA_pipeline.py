@@ -16,8 +16,6 @@ from run_fastqc import fastqc_fastq_PE, fastqc_SE
 # Setup 
 ################################################################################
 
-
-
 # Argparse to get all the input
 parser = argparse.ArgumentParser(description='Run linear RNAseq pipeline')
 # to do maybe make this one argument that sometimes needs two values
