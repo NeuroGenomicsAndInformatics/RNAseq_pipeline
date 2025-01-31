@@ -31,6 +31,10 @@ RUN apt-get update && apt-get install -y software-properties-common && \
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/
 
+# get new version of python (> 3.7 for multiqc)
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y python3.8
+
 
 #-----------------------------
 # Pipeline components
@@ -108,7 +112,9 @@ RUN cd /opt && \
 ENV PATH /opt/FastQC-0.11.9:$PATH
 
 # Install MultiQC
-RUN pip3 install multiqc 
+#RUN pip3 install multiqc # -- changing this so that python3.8 is used for multiqc 
+RUN python3.8 -m pip install --upgrade pip
+RUN python3.8 -m pip install multiqc
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
