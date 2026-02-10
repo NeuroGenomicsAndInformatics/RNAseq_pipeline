@@ -9,4 +9,5 @@ testing_jupyter plots.ipynb
 /DCC_old_unedited
 cutadapt.dockerfile
 linear_pipeline/src/gffread.dockerfile
+cumc_xqtl-pipeline 
 linear_pipeline/src/__pycache__
