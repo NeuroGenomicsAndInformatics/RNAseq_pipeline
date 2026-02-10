@@ -8,4 +8,5 @@ testing_argparse.ipynb
 testing_jupyter plots.ipynb
 /DCC_old_unedited
 cutadapt.dockerfile
-src/gffread.dockerfile
+linear_pipeline/src/gffread.dockerfile
+linear_pipeline/src/__pycache__
