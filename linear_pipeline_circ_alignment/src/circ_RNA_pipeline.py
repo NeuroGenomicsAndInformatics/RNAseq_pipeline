@@ -151,7 +151,7 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
           f' --readFilesIn {input_1} {input_2}'
           f' --readFilesCommand zcat' # not sure if this works if they aren't zipped
           f' --outFileNamePrefix {output_prefix}'
-          f' --outReadsUnmapped Within'
+          f' --outSAMunmapped Within'
           f' --outSJfilterOverhangMin 15 15 15 15'
           f' --alignSJoverhangMin 15'
           f' --alignSJDBoverhangMin 15'
@@ -179,7 +179,7 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
           f' --outFileNamePrefix {output_prefix_R1}'
-          f' --outReadsUnmapped Within'
+          f' --outSAMunmapped Within'
           f' --outSJfilterOverhangMin 15 15 15 15'
           f' --alignSJoverhangMin 15'
           f' --alignSJDBoverhangMin 15'
@@ -208,7 +208,7 @@ def star_chimeric_fastq_PE(input_1, input_2, sample_name, bam_out_dir, genome_di
           f' --readFilesIn {input_2}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
           f' --outFileNamePrefix {output_prefix_R2}'
-          f' --outReadsUnmapped Within'
+          f' --outSAMunmapped Within'
           f' --outSJfilterOverhangMin 15 15 15 15'
           f' --alignSJoverhangMin 15'
           f' --alignSJDBoverhangMin 15'
@@ -238,7 +238,7 @@ def star_chimeric_fastq_SE(input_1, sample_name, bam_out_dir, genome_dir,tmp_dir
           f' --readFilesIn {input_1}'
           f' --readFilesCommand zcat' #TODO not sure if this works if they aren't zipped
           f' --outFileNamePrefix {output_prefix}'
-          f' --outReadsUnmapped Within'
+          f' --outSAMunmapped Within'
           f' --outSJfilterOverhangMin 15 15 15 15'
           f' --alignSJoverhangMin 15'
           f' --alignSJDBoverhangMin 15'
@@ -325,7 +325,7 @@ def star_chimeric_bam_SE(input_ubam, out_dir, sample_name, genome_dir, tmp_dir, 
           f' --readFilesType {STAR_file_input}'
           f' --readFilesCommand {read_cmd}'
           f' --outFileNamePrefix {output_prefix}'
-          f' --outReadsUnmapped Within'
+          f' --outSAMunmapped Within'
           f' --outSJfilterOverhangMin 15 15 15 15'
           f' --alignSJoverhangMin 15'
           f' --alignSJDBoverhangMin 15'
